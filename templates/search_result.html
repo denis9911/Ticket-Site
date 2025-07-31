@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Поиск тикетов</h2>
+
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.query.label }}<br>
+        {{ form.query(class="form-control") }}
+    </div>
+    <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
+</form>
+
+{% if results %}
+<h3 class="mt-4">Результаты:</h3>
+<ul class="list-group">
+    {% for ticket in results %}
+    <li class="list-group-item">
+        <strong>Тикет #{{ ticket.id }}</strong><br>
+        Заказ: {{ ticket.order_number }}<br>
+        Email: {{ ticket.customer_email }}<br>
+        Статус: {{ ticket.status }}<br>
+        Продукт: {{ ticket.product }}<br>
+        Причина: {{ ticket.reason }}<br>
+        Сообщения: <br>
+        {% for message in ticket.messages %}
+            {{ message.created_at.strftime('%Y-%m-%d %H:%M:%S') }} : {{ message.content }}<br>
+        {% endfor %}
+    </li>
+    {% endfor %}
+</ul>
+{% elif form.query.data %}
+<p class="mt-4 text-muted">Ничего не найдено.</p>
+{% endif %}
+{% endblock %}

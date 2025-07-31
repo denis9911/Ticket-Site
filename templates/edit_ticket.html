@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4>Редактирование тикета #{{ ticket.id }}</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form.order_number.label(class="form-label") }}
+                        {{ form.order_number(class="form-control") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.source.label(class="form-label") }}
+                        {{ form.source(class="form-select") }}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.customer_email.label(class="form-label") }}
+                    {{ form.customer_email(class="form-control") }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.reason.label(class="form-label") }}
+                    {{ form.reason(class="form-control", rows=5) }}
+                </div>
+
+                <div class="mb-3">
+                    {{ form.status.label(class="form-label") }}
+                    {{ form.status(class="form-select") }}
+                </div>
+
+
+                <div class="mb-3">
+                    {{ form.images.label(class="form-label") }}
+                    {{ form.images(class="form-control", multiple=true, accept="image/*") }}
+                </div>
+
+                {% if ticket.images %}
+                <div class="mb-4">
+                    <h5>Прикреплённые изображения</h5>
+                    <div class="d-flex flex-wrap gap-3">
+                        {% for attachment in ticket.images %}
+                        <a href="{{ url_for('static', filename='uploads/' ~ attachment.filename) }}" target="_blank">
+                            <img src="{{ url_for('static', filename='uploads/' ~ attachment.filename) }}"
+                                 alt="Вложение" class="img-thumbnail" style="max-width: 150px;">
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="btn btn-secondary me-md-2">
+                        Отмена
+                    </a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

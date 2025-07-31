@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Мой профиль</h4>
+                </div>
+                <div class="card-body text-center">
+                    <!-- Аватар пользователя -->
+                    <div class="position-relative d-inline-block mb-3">
+                        {% if current_user.avatar %}
+                        <img src="{{ url_for('static', filename=current_user.avatar) }}"
+                             class="rounded-circle" width="150" height="150" alt="Аватар">
+                        {% else %}
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                             style="width: 150px; height: 150px;">
+                            <span class="display-4 text-white">{{ current_user.display_name|first|upper if current_user.display_name else current_user.username|first|upper }}</span>
+                        </div>
+                        {% endif %}
+                        <button class="btn btn-sm btn-info position-absolute bottom-0 end-0 rounded-circle"
+                                data-bs-toggle="modal" data-bs-target="#avatarModal">
+                            <i class="bi bi-camera"></i>
+                        </button>
+                    </div>
+
+                    <h3>{{ current_user.display_name or current_user.username }}</h3>
+                    <p class="text-muted">@{{ current_user.username }}</p>
+
+                    <div class="d-grid gap-2 mt-4">
+                        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#passwordModal">
+                            <i class="bi bi-key"></i> Сменить пароль
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Редактирование профиля</h4>
+                </div>
+                <div class="card-body">
+                    {{ form.hidden_tag() }}
+
+                    <div class="row mb-3">
+                        <div>
+                            {{ form.display_name.label(class="form-label") }}
+                            {{ form.display_name(class="form-control") }}
+                            <div>
+                            </div>
+
+                            <div class="mb-3">
+                                {{ form.avatar.label(class="form-label") }}
+                                {{ form.avatar(class="form-control") }}
+                                <div class="form-text">Максимальный размер файла: 2MB. Допустимые форматы: JPG, PNG.
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Сохранить изменения
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Статистика пользователя -->
+                    <div class="card shadow mt-4">
+                        <div class="card-header bg-primary text-white">
+                            <h4 class="mb-0">Моя статистика</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ current_user.tickets|length }}</h5>
+                                            <p class="card-text text-muted">Всего тикетов</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ current_user.tickets|selectattr('status',
+                                                'equalto', 'closed')|list|length }}</h5>
+                                            <p class="card-text text-muted">Закрытых</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ current_user.tickets|selectattr('status',
+                                                'equalto', 'open')|list|length }}</h5>
+                                            <p class="card-text text-muted">Открытых</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% if current_user.username == 'admin' %}
+                <div class="mt-4">
+                    <button class="btn btn-success" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#registerForm">
+                        <i class="bi bi-person-plus"></i> Зарегистрировать нового пользователя
+                    </button>
+
+                    <div class="collapse mt-3" id="registerForm">
+                        <div class="card card-body">
+                            <h5>Регистрация нового пользователя</h5>
+                            <form method="POST" action="{{ url_for('auth.register') }}">
+                                {{ register_form.hidden_tag() }}
+                                <div class="mb-3">
+                                    {{ register_form.username.label(class="form-label") }}
+                                    {{ register_form.username(class="form-control") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ register_form.password.label(class="form-label") }}
+                                    {{ register_form.password(class="form-control") }}
+                                </div>
+                                <div class="mb-3">
+                                    {{ register_form.display_name.label(class="form-label") }}
+                                    {{ register_form.display_name(class="form-control") }}
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> Зарегистрировать
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Модальное окно для смены аватара -->
+        <div class="modal fade" id="avatarModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Смена аватара</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="avatarForm" method="POST" action="{{ url_for('profile.change_avatar') }}"
+                              enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="avatarUpload" class="form-label">Выберите изображение</label>
+                                <input class="form-control" type="file" id="avatarUpload" name="avatar"
+                                       accept="image/*">
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                        <button type="submit" form="avatarForm" class="btn btn-primary">Сохранить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно для смены пароля -->
+        <div class="modal fade" id="passwordModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Смена пароля</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form method="POST" action="{{ url_for('profile.change_password') }}">
+                        {{ form.hidden_tag() }}
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="currentPassword" class="form-label">Текущий пароль</label>
+                                <input type="password" class="form-control" id="currentPassword"
+                                       name="current_password" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newPassword" class="form-label">Новый пароль</label>
+                                <input type="password" class="form-control" id="newPassword"
+                                       name="new_password" required minlength="6">
+                            </div>
+                            <div class="mb-3">
+                                <label for="confirmPassword" class="form-label">Подтвердите пароль</label>
+                                <input type="password" class="form-control" id="confirmPassword"
+                                       name="confirm_password" required minlength="6">
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                            <button type="submit" class="btn btn-primary">Изменить пароль</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

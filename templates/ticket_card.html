@@ -1,0 +1,88 @@
+<div class="card h-100 shadow-sm border-hover" style="min-height: 250px; max-width: 240px;">
+    <div class="card-body position-relative p-3">
+        <!-- Заголовок и ID -->
+        <div class="d-flex justify-content-between align-items-start mb-2">
+            <span class="badge bg-secondary">#{{ ticket.id }}</span>
+            <small class="text-muted text-end" style="font-size: 0.75rem;">
+                {% if ticket.created_at %}
+                <div>
+                    <i class="bi bi-plus-circle"></i>
+                    <span class="utc-time" data-utc="{{ ticket.created_at.isoformat() }}Z">...</span>
+                </div>
+                {% endif %}
+                {% if ticket.updated_at and ticket.updated_at != ticket.created_at %}
+                <div>
+                    <i class="bi bi-pencil"></i>
+                    <span class="utc-time" data-utc="{{ ticket.updated_at.isoformat() }}Z">...</span>
+                </div>
+                {% endif %}
+            </small>
+        </div>
+
+        <!-- Основное содержимое -->
+        <div class="ticket-content" style="height: calc(100% - 70px);">
+            <!-- Order ID и Email -->
+
+            <h6 class="card-title mb-2">
+                {% if ticket.order_number %}
+                <div class="d-flex align-items-center mb-1">
+                    <i class="bi bi-receipt me-1"></i>
+                    <span class="d-inline-block text-truncate" style="max-width: 150px;">
+                            {{ ticket.order_number }}
+                        </span>
+                </div>
+                {% endif %}
+                {% if ticket.customer_email %}
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-envelope me-1"></i>
+                    <span class="d-inline-block text-truncate" style="max-width: 150px;">
+                            {{ ticket.customer_email }}
+                        </span>
+                </div>
+                {% endif %}
+            </h6>
+
+            <!-- Источник -->
+            <div class="mb-2">
+                <span class="badge bg-dark mb-1">
+                    <i class="bi bi-shop me-1"></i>
+                    {% if ticket.source == 'talkme' %}TalkMe
+                    {% elif ticket.source == 'digiseller' %}Digiseller
+                    {% else %}{{ ticket.source or 'Не указан' }}{% endif %}
+                </span>
+                <span class="badge bg-info">
+                    <i class="bi bi-chat-text me-1"></i>
+                    {{ ticket.messages|length }}
+                </span>
+            </div>
+
+            <!-- Описание -->
+            <p class="text-muted small mb-0"
+               style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+                {{ ticket.reason or 'Описание отсутствует' }}
+            </p>
+        </div>
+
+        <!-- Статус и автор -->
+        <div class="position-absolute bottom-0 start-0 end-0 px-3 pb-2 pt-2 border-top">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="badge
+                    {% if ticket.status == 'closed' %}bg-success
+                    {% elif ticket.status == 'in_progress' %}bg-primary
+                    {% elif ticket.status == 'admin_needed' %}bg-danger
+                    {% else %}bg-warning{% endif %}"
+                      style="font-size: 0.75rem;">
+
+                    {% if ticket.status == 'closed' %}<i class="bi bi-check-circle"></i> Закрыт
+                    {% elif ticket.status == 'in_progress' %}<i class="bi bi-gear"></i> В работе
+                    {% elif ticket.status == 'admin_needed' %}<i class="bi bi-exclamation-triangle"></i> Нужен админ
+                    {% else %}<i class="bi bi-plus-circle"></i> Создан{% endif %}
+                </span>
+                <small class="text-muted text-truncate" style="max-width: 80px;">
+                    <strong>{{ ticket.author.display_name or ticket.author.username }}</strong>
+                </small>
+            </div>
+        </div>
+    </div>
+    <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="stretched-link"></a>
+</div>

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Создать новый тикет</h2>
+        <a href="{{ url_for('ticket.dashboard') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Назад
+        </a>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('ticket.new_ticket') }}" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        {{ form.order_number.label(class="form-label") }}
+                        {{ form.order_number(class="form-control", placeholder="Необязательно") }}
+                    </div>
+                    <div class="col-md-6">
+                        {{ form.source.label(class="form-label") }}
+                        {{ form.source(class="form-select") }}
+                        {% if form.source.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.source.errors[0] }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    {{ form.customer_email.label(class="form-label") }}
+                    {{ form.customer_email(class="form-control", type="email", placeholder="email@example.com") }}
+                </div>
+                <div class="mb-3">
+                    {{ form.product.label(class="form-label") }}
+                    {{ form.product(class="form-control", placeholder="Пример: Valorant Memez 1d") }}
+                </div>
+                <div class="mb-4">
+                    {{ form.reason.label(class="form-label") }}
+                    {{ form.reason(class="form-control", rows="5", placeholder="Что хочет от нас?") }}
+                    {% if form.reason.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.reason.errors[0] }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="mb-3">
+                    {{ form.images.label(class="form-label") }}
+                    {{ form.images(class="form-control", multiple=true, accept="image/*") }}
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-plus-circle"></i> Создать тикет
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

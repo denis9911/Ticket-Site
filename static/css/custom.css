@@ -1,0 +1,59 @@
+/* Стили для карточек тикетов */
+.border-hover {
+    border: 1px solid rgba(0,0,0,.125);
+    transition: all 0.2s ease;
+}
+.border-hover:hover {
+    border-color: #0d6efd;
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15);
+}
+
+/* Для закрытых тикетов */
+.card-closed {
+    opacity: 0.85;
+}
+.card-closed:hover {
+    opacity: 1;
+}
+
+.bg-success { background-color: #28a745 !important; } /* Закрыт */
+.bg-primary { background-color: #007bff !important; } /* В работе */
+.bg-danger { background-color: #dc3545 !important; }  /* Нужен админ */
+.bg-warning { background-color: #ffc107 !important; } /* Создан */
+
+    /* Контейнер чата */
+    .chat-container {
+        height: 400px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column-reverse; /* Новые сообщения добавляются внизу */
+    }
+
+    /* Контейнер сообщений */
+    .messages-wrapper {
+        /* Пустой, так как вся магия в chat-container */
+    }
+
+    /* Кастомный скроллбар */
+    .chat-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .chat-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .chat-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .chat-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    /* Плавная прокрутка */
+    .chat-container {
+        scroll-behavior: smooth;
+    }
