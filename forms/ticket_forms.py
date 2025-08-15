@@ -25,7 +25,7 @@ class EditTicketForm(FlaskForm):
     images = MultipleFileField('Прикрепить изображения',
                                validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
     status = SelectField('Статус',
-                         choices=[('open', 'Открыт'), ('in_progress', 'В работе'), ('admin_needed', 'Требуется админ'),
+                         choices=[('open', 'Открыт'), ('waiting_for_dev', 'Ждём ответ разраба'), ('admin_needed', 'Требуется админ'), ('send_to_buyer', "Отправьте ключ"),
                                   ('closed', 'Закрыт')], validators=[DataRequired()])
     submit = SubmitField('Сохранить изменения')
 

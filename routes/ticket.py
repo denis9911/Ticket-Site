@@ -26,7 +26,7 @@ def save_file(file):
 @login_required
 def dashboard():
     open_tickets = Ticket.query.filter(
-        Ticket.status.in_(['open', 'in_progress', 'admin_needed'])
+        Ticket.status.in_(['open', 'waiting_for_dev', 'admin_needed', 'send_to_buyer'])
     ).order_by(Ticket.created_at.desc()).all()
 
     closed_tickets = Ticket.query.filter(Ticket.status == 'closed').order_by(Ticket.closed_at.desc()).all()
@@ -152,8 +152,6 @@ def change_status(ticket_id):
         abort(404)
 
     new_status = request.form.get('new_status')
-    if new_status not in ['open', 'in_progress', 'admin_needed', 'closed']:
-        abort(400)
 
     # Логика изменения статуса
     # Сохраняем старый статус для сравнения

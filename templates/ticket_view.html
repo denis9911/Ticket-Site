@@ -130,19 +130,28 @@
 
                 <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
                       class="flex-grow-1">
-                    <input type="hidden" name="new_status" value="in_progress">
+                    <input type="hidden" name="new_status" value="admin_needed">
                     <button type="submit"
-                            class="btn btn-{% if ticket.status == 'in_progress' %}primary{% else %}outline-primary{% endif %} w-100">
-                        <i class="bi bi-gear"></i> В работе
+                            class="btn btn-{% if ticket.status == 'admin_needed' %}danger{% else %}outline-danger{% endif %} w-100">
+                        <i class="bi bi-exclamation-triangle"></i> Админу
                     </button>
                 </form>
 
                 <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
                       class="flex-grow-1">
-                    <input type="hidden" name="new_status" value="admin_needed">
+                    <input type="hidden" name="new_status" value="waiting_for_dev">
                     <button type="submit"
-                            class="btn btn-{% if ticket.status == 'admin_needed' %}danger{% else %}outline-danger{% endif %} w-100">
-                        <i class="bi bi-exclamation-triangle"></i> Админу
+                            class="btn btn-{% if ticket.status == 'waiting_for_dev' %}primary{% else %}outline-primary{% endif %} w-100">
+                        <i class="bi bi-gear"></i> Ждём ответ разраба
+                    </button>
+                </form>
+
+                <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
+                      class="flex-grow-1">
+                    <input type="hidden" name="new_status" value="send_to_buyer">
+                    <button type="submit"
+                            class="btn btn-{% if ticket.status == 'send_to_buyer' %}warning{% else %}outline-warning{% endif %} w-100">
+                        <i class="bi bi-exclamation-triangle"></i> Отправьте ключ
                     </button>
                 </form>
 
