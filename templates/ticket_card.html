@@ -75,6 +75,8 @@
 
                     {% if ticket.status == 'closed' %}<i class="bi bi-check-circle"></i> Закрыт
                     {% elif ticket.status == 'in_progress' %}<i class="bi bi-gear"></i> В работе
+                    {% elif ticket.status == 'waiting_for_dev' %}<i class="bi bi-arrow-clockwise"></i> Ждём разраба
+                    {% elif ticket.status == 'send_to_buyer' %}<i class="bi bi-key-fill"></i> Отправьте ключ
                     {% elif ticket.status == 'admin_needed' %}<i class="bi bi-exclamation-triangle"></i> Нужен админ
                     {% else %}<i class="bi bi-plus-circle"></i> Создан{% endif %}
                 </span>
