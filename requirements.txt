@@ -1,6 +1,7 @@
 Flask
 Flask-SQLAlchemy
 Flask-Login
+flask_migrate-4.1.0
 Flask-WTF
 werkzeug
 pytz
