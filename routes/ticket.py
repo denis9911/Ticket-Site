@@ -16,10 +16,10 @@ ticket_bp = Blueprint('ticket', __name__)
 
 def save_file(file):
     filename = secure_filename(file.filename)
-    unique_name = f"{uuid.uuid4().hex}_{filename}"
-    path = os.path.join(current_app.config['UPLOAD_FOLDER'], unique_name)
-    file.save(path)
-    return unique_name
+    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+    os.makedirs(upload_dir, exist_ok=True)
+    file.save(os.path.join(upload_dir, filename))
+    return filename
 
 
 @ticket_bp.route('/')
@@ -80,11 +80,12 @@ def new_ticket():
 
 @ticket_bp.route('/ticket/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required
+@login_required
 def view_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     form = MessageForm()
 
-    # --- Добавляем/обновляем запись о просмотре тикета ---
+    # --- Обновление информации о просмотре тикета ---
     view = TicketView.query.filter_by(ticket_id=ticket.id, user_id=current_user.id).first()
     if not view:
         view = TicketView(ticket_id=ticket.id, user_id=current_user.id)
@@ -93,16 +94,29 @@ def view_ticket(ticket_id):
     db.session.commit()
 
     if form.validate_on_submit():
+        # Создаем сообщение
         message = TicketMessage(
             content=form.content.data,
             ticket_id=ticket.id,
             user_id=current_user.id
         )
         db.session.add(message)
-        
+        db.session.commit()  # чтобы был message.id
+
+        # Сохраняем вложения
+        if form.attachment.data:
+            for file in form.attachment.data:
+                if file.filename != '':
+                    filename = save_file(file)
+                    attachment = TicketMessageAttachment(
+                        filename=filename,
+                        message_id=message.id
+                    )
+                    db.session.add(attachment)
+            db.session.commit()
+
         ticket.updated_at = datetime.now(timezone.utc)
         db.session.commit()
-
         flash('Сообщение отправлено', 'success')
         return redirect(url_for('ticket.view_ticket', ticket_id=ticket.id))
 
