@@ -1,7 +1,7 @@
 Flask
 Flask-SQLAlchemy
 Flask-Login
-flask_migrate-4.1.0
+flask_migrate
 Flask-WTF
 email_validator
 werkzeug

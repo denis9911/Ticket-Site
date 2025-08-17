@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
 from extensions import db
-from models.ticket import Ticket, TicketMessage
+from models.ticket import Ticket, TicketMessage, TicketMessageAttachment
 from models.attachment import TicketAttachment
 from forms.ticket_forms import TicketForm, MessageForm, EditTicketForm, TicketSearchForm
 from sqlalchemy import or_
@@ -76,6 +76,18 @@ def view_ticket(ticket_id):
             user_id=current_user.id
         )
         db.session.add(message)
+        db.session.flush()  # получаем ID сообщения до коммита
+
+        if form.attachment.data:
+            for file in form.attachment.data:
+                if file and file.filename:
+                    filename = secure_filename(file.filename)
+                    upload_path = os.path.join(current_app.static_folder, "uploads", filename)
+                    os.makedirs(os.path.dirname(upload_path), exist_ok=True)
+                    file.save(upload_path)
+
+                    attachment = TicketMessageAttachment(filename=filename, message_id=message.id)
+                    db.session.add(attachment)
 
         if ticket.status == 'open':
             ticket.status = 'in_progress'
@@ -152,6 +164,8 @@ def change_status(ticket_id):
         abort(404)
 
     new_status = request.form.get('new_status')
+    if new_status not in ['open', 'in_progress', 'admin_needed', 'closed']:
+        abort(400)
 
     # Логика изменения статуса
     # Сохраняем старый статус для сравнения

@@ -5,11 +5,11 @@ from flask_wtf.file import FileAllowed
 
 
 class TicketForm(FlaskForm):
-    order_number = StringField('Номер заказа')
+    order_number = StringField('Номер заказа', validators=[DataRequired()])
     source = SelectField('Откуда тикет?', choices=[('talkme', 'TalkMe'), ('digiseller', 'Digiseller')],
                          validators=[DataRequired()])
-    customer_email = StringField('Почта покупателя', validators=[Email()])
-    product = StringField('Купленный продукт (необязательно)')
+    customer_email = StringField('Почта покупателя', validators=[Email(), DataRequired()])
+    product = StringField('Купленный продукт', validators=[DataRequired()])
     images = MultipleFileField('Прикрепить изображения',
                                validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
     reason = TextAreaField('Причина обращения', validators=[DataRequired()])
@@ -17,10 +17,10 @@ class TicketForm(FlaskForm):
 
 
 class EditTicketForm(FlaskForm):
-    order_number = StringField('Номер заказа')
+    order_number = StringField('Номер заказа', validators=[DataRequired()])
     source = SelectField('Источник', choices=[('talkme', 'TalkMe'), ('digiseller', 'Digiseller'), ('other', 'Другое')],
                          validators=[DataRequired()])
-    customer_email = StringField('Email покупателя', validators=[Email()])
+    customer_email = StringField('Email покупателя', validators=[Email(), DataRequired()])
     reason = TextAreaField('Причина обращения', validators=[DataRequired()])
     images = MultipleFileField('Прикрепить изображения',
                                validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
@@ -31,7 +31,11 @@ class EditTicketForm(FlaskForm):
 
 
 class MessageForm(FlaskForm):
-    content = TextAreaField('Сообщение', validators=[DataRequired()])
+    content = TextAreaField('Сообщение')
+    attachment = MultipleFileField(
+        'Прикрепить файлы',
+        validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')]
+    )
     submit = SubmitField('Отправить')
 
 

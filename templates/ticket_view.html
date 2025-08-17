@@ -127,7 +127,6 @@
                         <i class="bi bi-plus-circle"></i> Открыт
                     </button>
                 </form>
-
                 <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
                       class="flex-grow-1">
                     <input type="hidden" name="new_status" value="admin_needed">
@@ -136,7 +135,6 @@
                         <i class="bi bi-exclamation-triangle"></i> Админу
                     </button>
                 </form>
-
                 <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
                       class="flex-grow-1">
                     <input type="hidden" name="new_status" value="waiting_for_dev">
@@ -154,7 +152,6 @@
                         <i class="bi bi-exclamation-triangle"></i> Отправьте ключ
                     </button>
                 </form>
-
                 <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
                       class="flex-grow-1">
                     <input type="hidden" name="new_status" value="closed">
@@ -238,6 +235,15 @@
                                 </small>
                             </div>
                             <p class="mb-0">{{ message.content }}</p>
+                            {% if message.attachments %}
+                                <div class="mt-2">
+                                    {% for img in message.attachments %}
+                                        <a href="{{ img.url() }}" target="_blank">
+                                            <img src="{{ img.url() }}" alt="Вложение" class="img-thumbnail me-2 mb-2" style="max-height: 150px;">
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}                            
                         </div>
                     </div>
                 </div>
@@ -252,14 +258,17 @@
 
         {% if ticket.status != 'closed' %}
         <div class="card-footer">
-            <form method="POST" id="message-form">
+            <form method="POST" id="message-form" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
-                <div class="input-group">
+                <div class="input-group mb-2">
                     {{ form.content(class="form-control", placeholder="Напишите сообщение...", rows="2") }}
-                    <button class="btn btn-primary" type="submit">
-                        <i class="bi bi-send"></i> Отправить
-                    </button>
                 </div>
+                <div class="input-group mb-2">
+                    {{ form.attachment(class="form-control") }}
+                </div>
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-send"></i> Отправить
+                </button>
             </form>
         </div>
         {% endif %}

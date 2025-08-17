@@ -17,7 +17,12 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         {{ form.order_number.label(class="form-label") }}
-                        {{ form.order_number(class="form-control", placeholder="Необязательно") }}
+                        {{ form.order_number(class="form-control", placeholder="Номер, либо прочерк, если номера заказа на диги нет") }}
+                        {% if form.order_number.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.order_number.errors[0] }}
+                        </div>
+                        {% endif %}
                     </div>
                     <div class="col-md-6">
                         {{ form.source.label(class="form-label") }}
@@ -43,7 +48,7 @@
                     {{ form.reason(class="form-control", rows="5", placeholder="Что хочет от нас?") }}
                     {% if form.reason.errors %}
                     <div class="invalid-feedback d-block">
-                        {{ form.reason.errors[0] }}
+                    {{ form.reason.errors[0] }}
                     </div>
                     {% endif %}
                 </div>

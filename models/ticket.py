@@ -1,4 +1,5 @@
 from extensions import db
+from flask import url_for
 
 from datetime import datetime, timezone
 
@@ -32,9 +33,10 @@ class Ticket(db.Model):
     )
 
 
+
 class TicketMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    content = db.Column(db.Text, nullable=False)
+    content = db.Column(db.Text, nullable=True)
     ticket_id = db.Column(
         db.Integer,
         db.ForeignKey('ticket.id', ondelete='CASCADE'),
@@ -42,3 +44,24 @@ class TicketMessage(db.Model):
     )
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+    attachments = db.relationship(
+        'TicketMessageAttachment',
+        backref='message',
+        lazy=True,
+        cascade='all, delete-orphan',
+        passive_deletes=True
+    )
+
+
+class TicketMessageAttachment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(256), nullable=False)
+    message_id = db.Column(
+        db.Integer,
+        db.ForeignKey('ticket_message.id', ondelete='CASCADE'),
+        nullable=False
+    )
+
+    def url(self):
+        return url_for('static', filename='uploads/' + self.filename)
