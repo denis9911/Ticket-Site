@@ -232,11 +232,32 @@ def search_tickets():
 def delete_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
 
-    # Разрешим удаление только администратору
     if not current_user.is_admin:
         abort(403)
 
+    # Удаляем все связанные TicketView
+    TicketView.query.filter_by(ticket_id=ticket.id).delete()
+
+    # Удаляем вложения сообщений
+    for msg in ticket.messages:
+        for att in msg.attachments:
+            try:
+                os.remove(os.path.join(current_app.static_folder, 'uploads', att.filename))
+            except Exception:
+                pass
+            db.session.delete(att)
+
+    # Удаляем файлы самого тикета
+    for att in ticket.images:
+        try:
+            os.remove(os.path.join(current_app.static_folder, 'uploads', att.filename))
+        except Exception:
+            pass
+        db.session.delete(att)
+
+    # Наконец, удаляем тикет
     db.session.delete(ticket)
     db.session.commit()
+
     flash(f'Тикет #{ticket.id} удалён', 'success')
     return redirect(url_for('ticket.dashboard'))
