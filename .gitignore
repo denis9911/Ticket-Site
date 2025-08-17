@@ -1,3 +1,4 @@
 uploads/
+migrations/
 tickets.db
 __pycache__

@@ -1,4 +1,5 @@
-<div class="card h-100 shadow-sm border-hover" style="min-height: 250px; max-width: 240px;">
+<div class="card h-100 shadow-sm border-hover position-relative">
+    <div class="glow-wrapper {% if ticket_highlights.get(ticket.id) %}glowing{% endif %}"></div>
     <div class="card-body position-relative p-3">
         <!-- Заголовок и ID -->
         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -20,7 +21,7 @@
         </div>
 
         <!-- Основное содержимое -->
-        <div class="ticket-content" style="height: calc(100% - 70px);">
+        <div class="ticket-content" style="padding-bottom: 40px;">
             <!-- Order ID и Email -->
 
             <h6 class="card-title mb-2">

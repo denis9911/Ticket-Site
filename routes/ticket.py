@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from extensions import db
 from models.ticket import Ticket, TicketMessage, TicketMessageAttachment
 from models.attachment import TicketAttachment
+from models.ticket_view import TicketView
 from forms.ticket_forms import TicketForm, MessageForm, EditTicketForm, TicketSearchForm
 from sqlalchemy import or_
 
@@ -31,7 +32,21 @@ def dashboard():
 
     closed_tickets = Ticket.query.filter(Ticket.status == 'closed').order_by(Ticket.closed_at.desc()).all()
 
-    return render_template('dashboard.html', open_tickets=open_tickets, closed_tickets=closed_tickets)
+    # Подсветка новых/обновлённых тикетов
+    ticket_highlights = {}
+    for ticket in open_tickets:
+        view = TicketView.query.filter_by(ticket_id=ticket.id, user_id=current_user.id).first()
+        if not view or (ticket.updated_at and ticket.updated_at > view.last_viewed_at):
+            ticket_highlights[ticket.id] = True
+        else:
+            ticket_highlights[ticket.id] = False
+    print(ticket_highlights)
+    return render_template(
+        'dashboard.html',
+        open_tickets=open_tickets,
+        closed_tickets=closed_tickets,
+        ticket_highlights=ticket_highlights  # <-- передаём сюда
+    )
 
 
 @ticket_bp.route('/new_ticket', methods=['GET', 'POST'])
@@ -69,6 +84,14 @@ def view_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     form = MessageForm()
 
+    # --- Добавляем/обновляем запись о просмотре тикета ---
+    view = TicketView.query.filter_by(ticket_id=ticket.id, user_id=current_user.id).first()
+    if not view:
+        view = TicketView(ticket_id=ticket.id, user_id=current_user.id)
+        db.session.add(view)
+    view.last_viewed_at = datetime.now(timezone.utc)
+    db.session.commit()
+
     if form.validate_on_submit():
         message = TicketMessage(
             content=form.content.data,
@@ -76,22 +99,7 @@ def view_ticket(ticket_id):
             user_id=current_user.id
         )
         db.session.add(message)
-        db.session.flush()  # получаем ID сообщения до коммита
-
-        if form.attachment.data:
-            for file in form.attachment.data:
-                if file and file.filename:
-                    filename = secure_filename(file.filename)
-                    upload_path = os.path.join(current_app.static_folder, "uploads", filename)
-                    os.makedirs(os.path.dirname(upload_path), exist_ok=True)
-                    file.save(upload_path)
-
-                    attachment = TicketMessageAttachment(filename=filename, message_id=message.id)
-                    db.session.add(attachment)
-
-        if ticket.status == 'open':
-            ticket.status = 'in_progress'
-
+        
         ticket.updated_at = datetime.now(timezone.utc)
         db.session.commit()
 
@@ -164,11 +172,9 @@ def change_status(ticket_id):
         abort(404)
 
     new_status = request.form.get('new_status')
-    if new_status not in ['open', 'in_progress', 'admin_needed', 'closed']:
+    if new_status not in ['open', 'waiting_for_dev', 'admin_needed', 'send_to_buyer' , 'closed']:
         abort(400)
 
-    # Логика изменения статуса
-    # Сохраняем старый статус для сравнения
     old_status = ticket.status
 
     ticket.status = new_status

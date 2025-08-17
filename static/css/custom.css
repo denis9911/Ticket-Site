@@ -57,3 +57,22 @@
     .chat-container {
         scroll-behavior: smooth;
     }
+
+.glow-wrapper {
+    position: absolute;
+    top: -2px; left: -2px; right: -2px; bottom: -2px;
+    border-radius: 0.25rem;  /* совпадает с .card */
+    pointer-events: none;
+}
+
+@keyframes glowAnimation {
+    0%   { box-shadow: 0 0 5px rgba(0,255,0,0.6); }
+    25%  { box-shadow: 0 0 15px rgba(0,255,0,0.8); }
+    50%  { box-shadow: 0 0 5px rgba(0,255,0,0.6); }
+    75%  { box-shadow: 0 0 15px rgba(0,255,0,0.8); }
+    100% { box-shadow: 0 0 5px rgba(0,255,0,0.6); }
+}
+
+.glowing {
+    animation: glowAnimation 2s infinite;
+}
