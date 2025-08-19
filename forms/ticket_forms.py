@@ -10,10 +10,12 @@ class TicketForm(FlaskForm):
                          validators=[DataRequired()])
     customer_email = StringField('Почта покупателя', validators=[Email(), DataRequired()])
     product = StringField('Купленный продукт', validators=[DataRequired()])
+    reason = TextAreaField('Причина обращения', validators=[DataRequired()])
     images = MultipleFileField('Прикрепить изображения',
                                validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
-    reason = TextAreaField('Причина обращения', validators=[DataRequired()])
+    status = SelectField('Статус', coerce=int, validators=[DataRequired()])  # <-- добавляем статус
     submit = SubmitField('Создать тикет')
+
 
 
 class EditTicketForm(FlaskForm):

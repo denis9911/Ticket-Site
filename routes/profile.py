@@ -4,9 +4,10 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from extensions import db
-from forms.profile_forms import ProfileForm
+from forms.profile_forms import ProfileForm, StatusForm
 from forms.auth_forms import RegisterForm
 from werkzeug.security import generate_password_hash, check_password_hash
+from models.ticket import Status
 
 profile_bp = Blueprint('profile', __name__)
 
@@ -19,11 +20,13 @@ def save_avatar(file):
     return f'uploads/{unique_name}'
 
 
+
 @profile_bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
     form = ProfileForm()
-    register_form = RegisterForm()  # ← добавляем форму регистрации
+    register_form = RegisterForm()
+    status_form = StatusForm()
 
     if form.validate_on_submit():
         current_user.display_name = form.display_name.data
@@ -34,11 +37,19 @@ def profile():
         db.session.commit()
         flash('Профиль обновлен', 'success')
         return redirect(url_for('profile.profile'))
-
     elif request.method == 'GET':
         form.display_name.data = current_user.display_name
 
-    return render_template('profile.html', form=form, register_form=register_form)
+    # вот это добавляем:
+    statuses = Status.query.all()
+
+    return render_template(
+        'profile.html',
+        form=form,
+        register_form=register_form,
+        status_form=status_form,
+        statuses=statuses   # ← передаём список статусов
+    )
 
 
 @profile_bp.route('/change_avatar', methods=['POST'])

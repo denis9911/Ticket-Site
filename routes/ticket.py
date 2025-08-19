@@ -5,7 +5,8 @@ from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
 from extensions import db
-from models.ticket import Ticket, TicketMessage, TicketMessageAttachment
+from forms.profile_forms import StatusForm
+from models.ticket import Ticket, TicketMessage, TicketMessageAttachment, Status
 from models.attachment import TicketAttachment
 from models.ticket_view import TicketView
 from forms.ticket_forms import TicketForm, MessageForm, EditTicketForm, TicketSearchForm
@@ -26,26 +27,31 @@ def save_file(file):
 @ticket_bp.route('/dashboard')
 @login_required
 def dashboard():
-    open_tickets = Ticket.query.filter(
-        Ticket.status.in_(['open', 'waiting_for_dev', 'admin_needed', 'send_to_buyer'])
-    ).order_by(Ticket.created_at.desc()).all()
+    # Получаем "открытые" статусы, кроме категории final
+    open_statuses = Status.query.filter(
+        Status.category != 'final'
+    ).all()
+    open_status_ids = [s.id for s in open_statuses]
 
-    closed_tickets = Ticket.query.filter(Ticket.status == 'closed').order_by(Ticket.closed_at.desc()).all()
+    # Открытые тикеты
+    open_tickets = Ticket.query.filter(Ticket.status_id.in_(open_status_ids)).order_by(Ticket.created_at.desc()).all()
+
+    # Закрытые тикеты (не в категории final)
+    closed_statuses = Status.query.filter(Status.category == 'final').all()
+    closed_status_ids = [s.id for s in closed_statuses]
+    closed_tickets = Ticket.query.filter(Ticket.status_id.in_(closed_status_ids)).order_by(Ticket.closed_at.desc()).all()
 
     # Подсветка новых/обновлённых тикетов
     ticket_highlights = {}
     for ticket in open_tickets:
         view = TicketView.query.filter_by(ticket_id=ticket.id, user_id=current_user.id).first()
-        if not view or (ticket.updated_at and ticket.updated_at > view.last_viewed_at):
-            ticket_highlights[ticket.id] = True
-        else:
-            ticket_highlights[ticket.id] = False
-    print(ticket_highlights)
+        ticket_highlights[ticket.id] = not view or (ticket.updated_at and ticket.updated_at > view.last_viewed_at)
+
     return render_template(
         'dashboard.html',
         open_tickets=open_tickets,
         closed_tickets=closed_tickets,
-        ticket_highlights=ticket_highlights  # <-- передаём сюда
+        ticket_highlights=ticket_highlights
     )
 
 
@@ -53,14 +59,22 @@ def dashboard():
 @login_required
 def new_ticket():
     form = TicketForm()
+
+    # Берём только статусы из категории "reason"
+    reason_statuses = Status.query.filter_by(category='reason').all()
+    form.status.choices = [(s.id, s.label) for s in reason_statuses]
+
     if form.validate_on_submit():
+        status_obj = Status.query.get(form.status.data)
+
         ticket = Ticket(
             order_number=form.order_number.data,
             source=form.source.data,
             customer_email=form.customer_email.data,
             product=form.product.data,
             reason=form.reason.data,
-            user_id=current_user.id
+            user_id=current_user.id,
+            status=status_obj
         )
         db.session.add(ticket)
         db.session.commit()
@@ -75,11 +89,11 @@ def new_ticket():
 
         flash('Тикет успешно создан!', 'success')
         return redirect(url_for('ticket.dashboard'))
-    return render_template('new_ticket.html', form=form)
+
+    return render_template('new_ticket.html', form=form, all_statuses=reason_statuses)
 
 
 @ticket_bp.route('/ticket/<int:ticket_id>', methods=['GET', 'POST'])
-@login_required
 @login_required
 def view_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
@@ -120,7 +134,16 @@ def view_ticket(ticket_id):
         flash('Сообщение отправлено', 'success')
         return redirect(url_for('ticket.view_ticket', ticket_id=ticket.id))
 
-    return render_template('ticket_view.html', ticket=ticket, form=form)
+    # Получаем все статусы для кнопок
+    all_statuses = Status.query.all()
+
+    return render_template(
+        'ticket_view.html',
+        ticket=ticket,
+        form=form,
+        all_statuses=all_statuses  # <-- передаём сюда
+    )
+
 
 
 @ticket_bp.route('/edit_ticket/<int:ticket_id>', methods=['GET', 'POST'])
@@ -181,28 +204,53 @@ def delete_message(message_id):
 @ticket_bp.route('/ticket/<int:ticket_id>/change_status', methods=['POST'])
 @login_required
 def change_status(ticket_id):
-    ticket = db.session.get(Ticket, ticket_id)
-    if not ticket:
-        abort(404)
-
-    new_status = request.form.get('new_status')
-    if new_status not in ['open', 'waiting_for_dev', 'admin_needed', 'send_to_buyer' , 'closed']:
+    ticket = Ticket.query.get_or_404(ticket_id)
+    
+    new_status_id = request.form.get('new_status_id')
+    if not new_status_id:
         abort(400)
 
-    old_status = ticket.status
+    status_obj = Status.query.get(new_status_id)
+    if not status_obj:
+        abort(400)
 
-    ticket.status = new_status
+    status_obj = Status.query.get(request.form.get('new_status_id'))
+    old_status = ticket.status  # ticket.status – объект Status
+    ticket.status = status_obj
 
-    if new_status == 'closed' and old_status != 'closed':
+    if old_status and old_status.name != 'closed' and status_obj.name == 'closed':
         ticket.closed_at = datetime.now(timezone.utc)
-    elif old_status == 'closed' and new_status != 'closed':
+    elif old_status and old_status.name == 'closed' and status_obj.name != 'closed':
         ticket.closed_at = None
 
-    ticket.updated_at = datetime.now(timezone.utc)
     db.session.commit()
-
-    flash(f'Статус изменен на "{new_status}"', 'success')
+    flash(f'Статус изменен на "{status_obj.label}"', 'success')
     return redirect(url_for('ticket.view_ticket', ticket_id=ticket.id))
+
+
+@ticket_bp.route('/statuses', methods=['GET', 'POST'])
+@login_required
+def manage_statuses():
+    if not current_user.is_admin:
+        abort(403)
+
+    status_form = StatusForm()
+
+    if status_form.validate_on_submit():
+        status = Status(
+            name=status_form.name.data,
+            label=status_form.label.data,
+            category=status_form.category.data,
+            color=status_form.color.data,
+            description=status_form.description.data
+        )
+        db.session.add(status)
+        db.session.commit()
+        flash("Статус добавлен", "success")
+        return redirect(url_for('profile.profile'))
+
+    statuses = Status.query.all()
+    return redirect(url_for('profile.profile'))
 
 
 @ticket_bp.route('/tickets/search', methods=['GET', 'POST'])
@@ -261,3 +309,22 @@ def delete_ticket(ticket_id):
 
     flash(f'Тикет #{ticket.id} удалён', 'success')
     return redirect(url_for('ticket.dashboard'))
+
+@ticket_bp.route('/add_status', methods=['POST'])
+@login_required
+def add_status():
+    if not current_user.is_admin:
+        abort(403)
+
+    label = request.form.get('label')
+    category = request.form.get('category')
+
+    if not label or not category:
+        flash("Все поля обязательны", "danger")
+        return redirect(url_for('ticket.new_ticket'))
+
+    status = Status(label=label, name=label.lower().replace(' ', '_'), category=category)
+    db.session.add(status)
+    db.session.commit()
+    flash(f'Статус "{label}" добавлен', 'success')
+    return redirect(url_for('ticket.new_ticket'))

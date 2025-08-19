@@ -4,11 +4,16 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Тикеты</h2>
-        <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Новый тикет
-        </a>
-        <a class="btn btn-primary" href="{{ url_for('ticket.search_tickets') }}">Поиск тикетов</a>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('ticket.new_ticket') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Новый тикет
+            </a>
+            <a href="{{ url_for('ticket.search_tickets') }}" class="btn btn-primary">
+                Поиск тикетов
+            </a>
+        </div>
     </div>
+
     <!-- Открытые активные тикеты -->
     <div class="mb-4">
         <h4 class="mb-3"><i class="bi bi-folder2-open"></i> Активные тикеты</h4>
@@ -16,16 +21,16 @@
             {% for ticket in open_tickets %}
             <div class="col">
                 {% include 'ticket_card.html' %}
-                                <div class="d-flex flex-row">
-                    {% if current_user.is_admin %}
-                <form method="POST" action="{{ url_for('ticket.delete_ticket', ticket_id=ticket.id) }}"
-                      style="display:inline;" onsubmit="return confirm('Удалить тикет #{{ ticket.id }}?');">
-                    <button type="submit" class="btn btn-danger btn-sm">
-                        <i class="bi bi-trash"></i> Удалить
-                    </button>
-                </form>
-                {% endif %}
+                {% if current_user.is_admin %}
+                <div class="d-flex flex-row mt-2">
+                    <form method="POST" action="{{ url_for('ticket.delete_ticket', ticket_id=ticket.id) }}"
+                          style="display:inline;" onsubmit="return confirm('Удалить тикет #{{ ticket.id }}?');">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bi bi-trash"></i> Удалить
+                        </button>
+                    </form>
                 </div>
+                {% endif %}
             </div>
             {% else %}
             <div class="col-12">
@@ -36,13 +41,12 @@
     </div>
 
     <!-- Разделитель и закрытые тикеты -->
-     <br>
     {% if closed_tickets %}
     <div class="position-relative my-5">
         <div class="position-absolute top-50 start-50 translate-middle px-3">
             <h5 class="mb-0 text-muted">
-               <i class="bi bi-archive"></i> Закрытые тикеты ({{ closed_tickets|length }})
-            </h5><br>
+                <i class="bi bi-archive"></i> Закрытые тикеты ({{ closed_tickets|length }})
+            </h5>
         </div>
     </div>
     <hr class="border-2">
@@ -72,9 +76,13 @@
             {% endif %}
 
             {% for page_num in pagination.iter_pages() %}
+            {% if page_num %}
             <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
                 <a class="page-link" href="{{ url_for('ticket.dashboard', page=page_num) }}">{{ page_num }}</a>
             </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
             {% endfor %}
 
             {% if pagination.has_next %}

@@ -1,3 +1,5 @@
 uploads/
+mig.py
 tickets.db
 __pycache__
+.gitignore

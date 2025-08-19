@@ -12,7 +12,8 @@ class Ticket(db.Model):
     product = db.Column(db.String(100), nullable=True)
     reason = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    status = db.Column(db.String(20), default='open')
+    status_id = db.Column(db.Integer, db.ForeignKey("status.id"), nullable=False)
+    status = db.relationship("Status")
     created_at = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=lambda: datetime.now(timezone.utc))
     closed_at = db.Column(db.DateTime(timezone=True))
@@ -32,6 +33,15 @@ class Ticket(db.Model):
         passive_deletes=True
     )
 
+
+class Status(db.Model):
+    __tablename__ = "status" 
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True, nullable=False)   # техническое имя ("open", "admin_needed", "closed", )
+    label = db.Column(db.String(100), nullable=False)              # человекочитаемое ("Открыт", "Нужен Админ", "Закрыт")
+    category = db.Column(db.String(50), nullable=True)             # категория ("reason", "process", "final")
+    color = db.Column(db.String(20), nullable=True)                # например: "warning", "primary", "success"
+    description = db.Column(db.String(100), nullable=True)         # например: "Вопрос по платежу - Завис платеж или другие проблемы с ним"
 
 
 class TicketMessage(db.Model):
@@ -65,3 +75,4 @@ class TicketMessageAttachment(db.Model):
 
     def url(self):
         return url_for('static', filename='uploads/' + self.filename)
+

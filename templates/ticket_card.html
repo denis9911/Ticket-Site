@@ -67,19 +67,16 @@
         <!-- Статус и автор -->
         <div class="position-absolute bottom-0 start-0 end-0 px-3 pb-2 pt-2 border-top">
             <div class="d-flex justify-content-between align-items-center">
-                <span class="badge
-                    {% if ticket.status == 'closed' %}bg-success
-                    {% elif ticket.status == 'in_progress' %}bg-primary
-                    {% elif ticket.status == 'admin_needed' %}bg-danger
-                    {% else %}bg-warning{% endif %}"
-                      style="font-size: 0.75rem;">
-
-                    {% if ticket.status == 'closed' %}<i class="bi bi-check-circle"></i> Закрыт
-                    {% elif ticket.status == 'in_progress' %}<i class="bi bi-gear"></i> В работе
-                    {% elif ticket.status == 'waiting_for_dev' %}<i class="bi bi-arrow-clockwise"></i> Ждём разраба
-                    {% elif ticket.status == 'send_to_buyer' %}<i class="bi bi-key-fill"></i> Отправьте ключ
-                    {% elif ticket.status == 'admin_needed' %}<i class="bi bi-exclamation-triangle"></i> Нужен админ
-                    {% else %}<i class="bi bi-plus-circle"></i> Создан{% endif %}
+                <span class="badge bg-{{ ticket.status.color or 'secondary' }}" style="font-size: 0.75rem;">
+                    {% set icon_map = {
+                        'success': 'check-circle',
+                        'primary': 'gear',
+                        'warning': 'plus-circle',
+                        'danger': 'exclamation-triangle',
+                        'info': 'key-fill'
+                    } %}
+                    <i class="bi bi-{{ icon_map.get(ticket.status.color, 'question-circle') }}"></i>
+                    {{ ticket.status.label }}
                 </span>
                 <small class="text-muted text-truncate" style="max-width: 80px;">
                     <strong>{{ ticket.author.display_name or ticket.author.username }}</strong>

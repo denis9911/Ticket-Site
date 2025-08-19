@@ -6,12 +6,12 @@
         <div class="card-header bg-primary text-white">
             <div class="d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">Тикет #{{ ticket.id }}</h4>
-                <span class="badge bg-{{ 'success' if ticket.status == 'closed' else 'primary' if ticket.status == 'in_progress' else 'danger' if ticket.status == 'admin_needed' else 'warning' }}">
-                    {% if ticket.status == 'closed' %}<i class="bi bi-check-circle"></i> Закрыт
-                    {% elif ticket.status == 'in_progress' %}<i class="bi bi-gear"></i> В работе
-                    {% elif ticket.status == 'admin_needed' %}<i class="bi bi-exclamation-triangle"></i> Нужен админ
-                    {% else %}<i class="bi bi-plus-circle"></i> Создан{% endif %}
-                </span>
+                    <span class="badge bg-{{ ticket.status.color or 'secondary' }}">
+                        {% if ticket.status.icon %}
+                            <i class="bi bi-{{ ticket.status.icon }}"></i>
+                        {% endif %}
+                        {{ ticket.status.label }}
+                    </span>
             </div>
         </div>
 
@@ -107,7 +107,7 @@
                         </div>
                     </div>
 
-                    {% if ticket.status != 'closed' %}
+                    {% if ticket.status.category != 'final' %}
                     <div class="d-flex gap-2">
                         <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}"
                            class="btn btn-sm btn-outline-primary">
@@ -118,48 +118,72 @@
                 </div>
             </div>
             <!-- Кнопки изменения статуса -->
-            <div class="btn-group w-100" role="group">
-                <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
-                      class="flex-grow-1">
-                    <input type="hidden" name="new_status" value="open">
-                    <button type="submit"
-                            class="btn btn-{% if ticket.status == 'open' %}warning{% else %}outline-warning{% endif %} w-100">
-                        <i class="bi bi-plus-circle"></i> Открыт
-                    </button>
-                </form>
-                <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
-                      class="flex-grow-1">
-                    <input type="hidden" name="new_status" value="admin_needed">
-                    <button type="submit"
-                            class="btn btn-{% if ticket.status == 'admin_needed' %}danger{% else %}outline-danger{% endif %} w-100">
-                        <i class="bi bi-exclamation-triangle"></i> Админу
-                    </button>
-                </form>
-                <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
-                      class="flex-grow-1">
-                    <input type="hidden" name="new_status" value="waiting_for_dev">
-                    <button type="submit"
-                            class="btn btn-{% if ticket.status == 'waiting_for_dev' %}primary{% else %}outline-primary{% endif %} w-100">
-                        <i class="bi bi-gear"></i> Ждём ответ разраба
-                    </button>
-                </form>
+            <div class="row">
+                <!-- Категория REASON -->
+                <div class="col-md-4">
+                    <h6 class="text-center">Причина</h6>
+                    <div class="btn-group-vertical w-100" role="group">
+                        {% for s in all_statuses if s.category == 'reason' %}
+                        <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST" class="w-100 mb-2">
+                            <input type="hidden" name="new_status_id" value="{{ s.id }}">
+                            <button type="submit"
+                                    class="btn d-flex justify-content-between align-items-center {% if ticket.status.id == s.id %}btn-{{ s.color }}{% else %}btn-outline-{{ s.color }}{% endif %} w-100">
+                                <span>
+                                    {% if s.icon %}<i class="bi bi-{{ s.icon }}"></i>{% endif %} {{ s.label }}
+                                </span>
+                                <i class="bi bi-question-circle ms-2"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="{{ s.description }}"></i>
+                            </button>
+                        </form>
+                        {% endfor %}
+                    </div>
+                </div>
 
-                <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
-                      class="flex-grow-1">
-                    <input type="hidden" name="new_status" value="send_to_buyer">
-                    <button type="submit"
-                            class="btn btn-{% if ticket.status == 'send_to_buyer' %}warning{% else %}outline-warning{% endif %} w-100">
-                        <i class="bi bi-exclamation-triangle"></i> Отправьте ключ
-                    </button>
-                </form>
-                <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST"
-                      class="flex-grow-1">
-                    <input type="hidden" name="new_status" value="closed">
-                    <button type="submit"
-                            class="btn btn-{% if ticket.status == 'closed' %}success{% else %}outline-success{% endif %} w-100">
-                        <i class="bi bi-check-circle"></i> Закрыть
-                    </button>
-                </form>
+                <!-- Категория PROCESS -->
+                <div class="col-md-4">
+                    <h6 class="text-center">Процесс</h6>
+                    <div class="btn-group-vertical w-100" role="group">
+                        {% for s in all_statuses if s.category == 'process' %}
+                        <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST" class="w-100 mb-2">
+                            <input type="hidden" name="new_status_id" value="{{ s.id }}">
+                            <button type="submit"
+                                    class="btn d-flex justify-content-between align-items-center {% if ticket.status.id == s.id %}btn-{{ s.color }}{% else %}btn-outline-{{ s.color }}{% endif %} w-100">
+                                <span>
+                                    {% if s.icon %}<i class="bi bi-{{ s.icon }}"></i>{% endif %} {{ s.label }}
+                                </span>
+                                <i class="bi bi-question-circle ms-2"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="{{ s.description }}"></i>
+                            </button>
+                        </form>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Категория FINAL -->
+                <div class="col-md-4">
+                    <h6 class="text-center">Финал</h6>
+                    <div class="btn-group-vertical w-100" role="group">
+                        {% for s in all_statuses if s.category == 'final' %}
+                        <form action="{{ url_for('ticket.change_status', ticket_id=ticket.id) }}" method="POST" class="w-100 mb-2">
+                            <input type="hidden" name="new_status_id" value="{{ s.id }}">
+                            <button type="submit"
+                                    class="btn d-flex justify-content-between align-items-center {% if ticket.status.id == s.id %}btn-{{ s.color }}{% else %}btn-outline-{{ s.color }}{% endif %} w-100">
+                                <span>
+                                    {% if s.icon %}<i class="bi bi-{{ s.icon }}"></i>{% endif %} {{ s.label }}
+                                </span>
+                                <i class="bi bi-question-circle ms-2"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                title="{{ s.description }}"></i>
+                            </button>
+                        </form>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
             <div class="mb-4">
                 <h5>Причина обращения</h5>
@@ -256,7 +280,7 @@
             </div>
         </div>
 
-        {% if ticket.status != 'closed' %}
+        {% if ticket.status.category != 'final' %}
         <div class="card-footer">
             <form method="POST" id="message-form" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
