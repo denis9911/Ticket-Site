@@ -76,3 +76,8 @@
 .glowing {
     animation: glowAnimation 2s infinite;
 }
+
+.ticket-content {
+    font-family: Poppins, sans-serif;
+
+}

@@ -13,22 +13,23 @@ class TicketForm(FlaskForm):
     reason = TextAreaField('Причина обращения', validators=[DataRequired()])
     images = MultipleFileField('Прикрепить изображения',
                                validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
-    status = SelectField('Статус', coerce=int, validators=[DataRequired()])  # <-- добавляем статус
+    status = SelectField('Статус', coerce=int, validators=[DataRequired()])
     submit = SubmitField('Создать тикет')
+
 
 
 
 class EditTicketForm(FlaskForm):
     order_number = StringField('Номер заказа', validators=[DataRequired()])
-    source = SelectField('Источник', choices=[('talkme', 'TalkMe'), ('digiseller', 'Digiseller'), ('other', 'Другое')],
+    source = SelectField('Источник',
+                         choices=[('talkme', 'TalkMe'), ('digiseller', 'Digiseller'), ('other', 'Другое')],
                          validators=[DataRequired()])
     customer_email = StringField('Email покупателя', validators=[Email(), DataRequired()])
     reason = TextAreaField('Причина обращения', validators=[DataRequired()])
     images = MultipleFileField('Прикрепить изображения',
                                validators=[FileAllowed(['jpg', 'jpeg', 'png', 'gif'], 'Только изображения!')])
-    status = SelectField('Статус',
-                         choices=[('open', 'Открыт'), ('waiting_for_dev', 'Ждём ответ разраба'), ('admin_needed', 'Требуется админ'), ('send_to_buyer', "Отправьте ключ"),
-                                  ('closed', 'Закрыт')], validators=[DataRequired()])
+    # КЛЮЧЕВОЕ: выбираем id статуса
+    status = SelectField('Статус', coerce=int, validators=[DataRequired()])
     submit = SubmitField('Сохранить изменения')
 
 

@@ -152,37 +152,56 @@ def edit_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     form = EditTicketForm()
 
+    # 1) Подтянем статусы в choices (value=id, label=читаемое имя)
+    statuses = Status.query.order_by(Status.id).all()
+    form.status.choices = [(s.id, s.label) for s in statuses]
+
     if form.validate_on_submit():
+        old_status_obj = ticket.status  # объект Status до изменения
+        new_status_obj = next((s for s in statuses if s.id == form.status.data), None)
+
+        if new_status_obj is None:
+            flash('Некорректный статус.', 'danger')
+            return render_template('edit_ticket.html', form=form, ticket=ticket)
+
+        # 2) Обновляем простые поля
         ticket.order_number = form.order_number.data
         ticket.source = form.source.data
         ticket.customer_email = form.customer_email.data
         ticket.reason = form.reason.data
-        ticket.status = form.status.data
 
-        if form.status.data == 'closed' and ticket.status != 'closed':
+        # 3) Обновляем статус через relationship (и, как следствие, status_id)
+        ticket.status = new_status_obj
+
+        # 4) Логика closed_at: сравниваем по техническому имени статуса
+        old_name = (old_status_obj.name if old_status_obj else None)
+        new_name = new_status_obj.name
+
+        if old_name != 'closed' and new_name == 'closed':
             ticket.closed_at = datetime.now(timezone.utc)
-        elif form.status.data != 'closed' and ticket.status == 'closed':
+        elif old_name == 'closed' and new_name != 'closed':
             ticket.closed_at = None
 
+        # 5) Сохранение вложений (если есть)
         if form.images.data:
             for img in form.images.data:
-                if img.filename != '':
-                    filename = save_file(img)
-                    attachment = TicketAttachment(filename=filename, ticket_id=ticket.id)
-                    db.session.add(attachment)
+                if img and getattr(img, 'filename', ''):
+                    filename = save_file(img)  # ваша функция сохранения
+                    db.session.add(TicketAttachment(filename=filename, ticket_id=ticket.id))
 
         ticket.updated_at = datetime.now(timezone.utc)
         db.session.commit()
 
-        flash('Тикет успешно обновлен', 'success')
+        flash('Тикет успешно обновлён', 'success')
         return redirect(url_for('ticket.view_ticket', ticket_id=ticket.id))
 
+    # GET — префилл формы текущими значениями
     if request.method == 'GET':
         form.order_number.data = ticket.order_number
         form.source.data = ticket.source
         form.customer_email.data = ticket.customer_email
         form.reason.data = ticket.reason
-        form.status.data = ticket.status
+        form.status.data = ticket.status_id  # ВАЖНО: теперь выбираем по id
 
     return render_template('edit_ticket.html', form=form, ticket=ticket)
 
