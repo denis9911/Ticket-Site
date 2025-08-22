@@ -1,0 +1,126 @@
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h5>Информация о запросе</h5>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+                <strong>Источник:</strong>
+                {% if ticket.source == 'talkme' %}
+                    <span class="badge bg-primary">TalkMe</span>
+                {% elif ticket.source == 'digiseller' %}
+                    <span class="badge bg-success">Digiseller</span>
+                {% else %}
+                    {{ ticket.source }}
+                {% endif %}
+            </li>
+            <li class="list-group-item">
+                <strong>Номер заказа:</strong>
+                {{ ticket.order_number or 'Не указан' }}
+            </li>
+            <li class="list-group-item">
+                <strong>Email покупателя:</strong>
+                {% if ticket.customer_email %}
+                    <a href="mailto:{{ ticket.customer_email }}">{{ ticket.customer_email }}</a>
+                {% else %}
+                    Не указан
+                {% endif %}
+            </li>
+            <li class="list-group-item">
+                <strong>Купленный продукт:</strong>
+                {% if ticket.product %}
+                    {{ ticket.product }}
+                {% else %}
+                    Не указан
+                {% endif %}
+            </li>
+            <li class="list-group-item">
+                <strong>Создан:</strong>
+                <small class="text-muted">
+                    {% if ticket.created_at %}
+                        <span class="utc-time" data-utc="{{ ticket.created_at.isoformat() }}Z">
+                            {{ ticket.created_at.strftime('%Y-%m-%d %H:%M UTC') }}
+                        </span>
+                    {% else %}
+                        Дата не указана
+                    {% endif %}
+                </small>
+            </li>
+            <li class="list-group-item">
+                <strong>Изменён:</strong>
+                <small class="text-muted">
+                    {% if ticket.updated_at %}
+                        <span class="utc-time" data-utc="{{ ticket.updated_at.isoformat() }}Z">
+                            {{ ticket.updated_at.strftime('%Y-%m-%d %H:%M UTC') }}
+                        </span>
+                    {% else %}
+                        Дата не указана
+                    {% endif %}
+                </small>
+            </li>
+            <li class="list-group-item">
+                <strong>Закрыт:</strong>
+                <small class="text-muted">
+                    {% if ticket.closed_at %}
+                        <span class="utc-time" data-utc="{{ ticket.closed_at.isoformat() }}Z">
+                            {{ ticket.closed_at.strftime('%Y-%m-%d %H:%M UTC') }}
+                        </span>
+                    {% else %}
+                        Дата не указана
+                    {% endif %}
+                </small>
+            </li>
+        </ul>
+    </div>
+
+    <div class="col-md-6">
+        <h5>Автор тикета</h5>
+        <div class="d-flex align-items-center mb-3">
+            {% if ticket.author.avatar %}
+                <img src="{{ url_for('static', filename=ticket.author.avatar) }}"
+                     class="rounded-circle me-3" width="64" height="64" alt="Аватар">
+            {% else %}
+                <div class="bg-secondary rounded-circle me-3 d-flex align-items-center justify-content-center"
+                     style="width: 64px; height: 64px;">
+                    <span class="text-white fs-4">
+                        {{ (ticket.author.display_name or ticket.author.username)|first|upper }}
+                    </span>
+                </div>
+            {% endif %}
+            <div>
+                <h6 class="mb-1">{{ ticket.author.display_name or ticket.author.username }}</h6>
+                <small class="text-muted">@{{ ticket.author.username }}</small>
+            </div>
+        </div>
+
+        {% if ticket.status.category != 'final' %}
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('ticket.edit_ticket', ticket_id=ticket.id) }}"
+               class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i> Редактировать
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="mb-4">
+    <h5>Причина обращения</h5>
+    <div class="card">
+        <div class="card-body">
+            {{ ticket.reason or 'Причина не указана' }}
+        </div>
+    </div>
+</div>
+
+{% if ticket.images %}
+<div class="mb-4">
+    <h5>Прикреплённые изображения</h5>
+    <div class="d-flex flex-wrap gap-3">
+        {% for attachment in ticket.images %}
+            <a href="{{ url_for('static', filename='uploads/' ~ attachment.filename) }}" target="_blank">
+                <img src="{{ url_for('static', filename='uploads/' ~ attachment.filename) }}"
+                     alt="Вложение" class="img-thumbnail" style="max-width: 150px;">
+            </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}

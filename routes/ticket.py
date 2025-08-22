@@ -134,14 +134,13 @@ def view_ticket(ticket_id):
         flash('Сообщение отправлено', 'success')
         return redirect(url_for('ticket.view_ticket', ticket_id=ticket.id))
 
-    # Получаем все статусы для кнопок
     all_statuses = Status.query.all()
 
     return render_template(
-        'ticket_view.html',
+        'ticket_view/ticket_view.html',
         ticket=ticket,
         form=form,
-        all_statuses=all_statuses  # <-- передаём сюда
+        all_statuses=all_statuses
     )
 
 

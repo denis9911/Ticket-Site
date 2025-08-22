@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow mb-4">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Тикет #{{ ticket.id }}</h4>
+                <span class="badge bg-{{ ticket.status.color or 'secondary' }}">
+                    {% if ticket.status.icon %}
+                        <i class="bi bi-{{ ticket.status.icon }}"></i>
+                    {% endif %}
+                    {{ ticket.status.label }}
+                </span>
+            </div>
+        </div>
+
+        <div class="card-body">
+            {% include "ticket_view/_body.html" %}
+            {% include "ticket_view/_statuses.html" %}
+        </div>
+    </div>
+
+    {% include "ticket_view/_chat.html" %}
+
+    <div class="d-grid">
+        <a href="{{ url_for('ticket.dashboard') }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Назад к списку тикетов
+        </a>
+    </div>
+</div>
+
+<style>
+    .card-body::-webkit-scrollbar { width: 8px; }
+    .card-body::-webkit-scrollbar-track { background: #f1f1f1; }
+    .card-body::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+    .card-body::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    .btn-group .btn { border-radius: 0; }
+    .btn-group .btn:first-child {
+        border-top-left-radius: 0.25rem;
+        border-bottom-left-radius: 0.25rem;
+    }
+    .btn-group .btn:last-child {
+        border-top-right-radius: 0.25rem;
+        border-bottom-right-radius: 0.25rem;
+    }
+</style>
+{% endblock %}
