@@ -13,35 +13,37 @@
         <div class="card-body">
             <form method="POST" action="{{ url_for('ticket.new_ticket') }}" enctype="multipart/form-data">
                 {{ form.hidden_tag() }}
-
-                <div class="row mb-3">
-                    <div class="col-md-6">
+                <div class="col-md-6">
+                    {{ form.source.label(class="form-label") }}
+                    {{ form.source(class="form-select") }}
+                    {% if form.source.errors %}
+                    <div class="invalid-feedback d-block">
+                        {{ form.source.errors[0] }}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="col-md-6 d-flex align-items-end">
+                    <div class="flex-grow-1 me-2">
                         {{ form.order_number.label(class="form-label") }}
-                        {{ form.order_number(class="form-control", placeholder="Номер, либо прочерк, если номера заказа на диги нет") }}
+                        {{ form.order_number(class="form-control", placeholder="Номер, либо прочерк, если номера заказа на диги нет", id="order_number") }}
                         {% if form.order_number.errors %}
                         <div class="invalid-feedback d-block">
                             {{ form.order_number.errors[0] }}
                         </div>
                         {% endif %}
                     </div>
-                    <div class="col-md-6">
-                        {{ form.source.label(class="form-label") }}
-                        {{ form.source(class="form-select") }}
-                        {% if form.source.errors %}
-                        <div class="invalid-feedback d-block">
-                            {{ form.source.errors[0] }}
-                        </div>
-                        {% endif %}
-                    </div>
+                    <button type="button" class="btn btn-outline-secondary" id="checkOrderBtn">Проверить</button>
                 </div>
+                <small id="checkOrderMsg" class="text-danger"></small>
+                <small id="existingTicketMsg" class="text-warning"></small>
 
                 <div class="mb-3">
                     {{ form.customer_email.label(class="form-label") }}
-                    {{ form.customer_email(class="form-control", type="email", placeholder="email@example.com") }}
+                    {{ form.customer_email(class="form-control", type="email", placeholder="email@example.com", id="customer_email") }}
                 </div>
                 <div class="mb-3">
                     {{ form.product.label(class="form-label") }}
-                    {{ form.product(class="form-control", placeholder="Пример: Valorant Memez 1d") }}
+                    {{ form.product(class="form-control", placeholder="Пример: Valorant Memez 1d", id="product") }}
                 </div>
                 <div class="mb-4">
                     {{ form.reason.label(class="form-label") }}
@@ -76,4 +78,45 @@
         </div>
     </div>
 </div>
+<script>
+document.getElementById('checkOrderBtn').addEventListener('click', function() {
+    const orderNumber = document.querySelector('[name="order_number"]').value.trim();
+    const msg = document.getElementById('checkOrderMsg');
+    const existingMsg = document.getElementById('existingTicketMsg');
+    msg.textContent = '';
+    existingMsg.textContent = '';
+
+    if (!orderNumber) {
+        msg.textContent = 'Введите номер заказа!';
+        return;
+    }
+
+    fetch('{{ url_for("ticket.check_order") }}', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({order_number: orderNumber})
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Ошибка запроса');
+        return res.json();
+    })
+    .then(data => {
+        if (data.found) {
+            document.querySelector('[name="customer_email"]').value = data.customer_email;
+            document.querySelector('[name="product"]').value = data.product;
+            msg.textContent = '';
+
+            if (data.existing_ticket) {
+                existingMsg.innerHTML = `Тикет для этого заказа уже создан: <a href="/ticket/${data.existing_ticket}">#${data.existing_ticket}</a>`;
+            }
+        } else {
+            msg.textContent = 'Заказ с таким номером не найден!';
+        }
+    })
+    .catch(err => {
+        msg.textContent = 'Ошибка запроса к серверу';
+    });
+});
+</script>
 {% endblock %}
+

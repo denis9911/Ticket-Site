@@ -1,0 +1,51 @@
+<div class="card mb-3 p-2">
+    {% set currency_names = {'WMR': '₽', 'WMZ': '$', 'WML': 'Ł', 'WMT':'USDT'} %}
+    {% set totals = {} %}
+    {% for sale in user_sales %}
+        {% set currency = sale.amount_currency %}
+        {% set totals = totals.update({currency: (totals.get(currency, 0) + sale.amount_in)}) or totals %}
+    {% endfor %}
+
+    <p><strong>Общая сумма покупок:</strong></p>
+    <div class="d-flex flex-wrap">
+        {% for currency, amount in totals.items() %}
+            <div class="me-3">
+                {{ "%.2f"|format(amount) }} {{ currency_names.get(currency, currency) }}
+            </div>
+        {% endfor %}
+    </div>
+
+    <a class="btn btn-sm btn-outline-secondary mb-2" data-bs-toggle="collapse" href="#purchaseHistory" role="button" aria-expanded="false" aria-controls="purchaseHistory">
+         Показать / Скрыть детали
+    </a>
+
+    <div class="collapse" id="purchaseHistory">
+        <table class="table table-sm table-hover mb-0">
+            <thead class="table">
+                <tr>
+                    <th>Дата</th>
+                    <th>Заказ</th>
+                    <th>Продукт</th>
+                    <th>Сумма</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sale in user_sales %}
+                <tr>
+                    <td>{{ sale.date_pay.strftime("%d/%m/%y") }}</td>
+                    <td>
+                        {% set invoice_id = sale.invoice_id|string|trim %}
+                        {% if tickets_by_invoice.get(invoice_id) %}
+                            <a href="{{ url_for('ticket.view_ticket', ticket_id=tickets_by_invoice[invoice_id]) }}">{{ invoice_id }}</a>
+                        {% else %}
+                            {{ invoice_id }}
+                        {% endif %}
+                    </td>
+                    <td>{{ sale.product_name }}</td>
+                    <td>{{ sale.amount_in }} {{ currency_names.get(sale.amount_currency, sale.amount_currency) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>

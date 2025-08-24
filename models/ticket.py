@@ -1,15 +1,27 @@
 from extensions import db
 from flask import url_for
+from models.sales import Sale
 
 from datetime import datetime, timezone
 
 
 class Ticket(db.Model):
+    __tablename__ = "ticket"
+    __table_args__ = (
+        db.Index('idx_ticket_order_number', 'order_number'),
+    )
     id = db.Column(db.Integer, primary_key=True)
-    order_number = db.Column(db.String(50))
-    source = db.Column(db.String(100))
+    sales_id = db.Column(db.Integer, db.ForeignKey("sales.id"), nullable=True)
+
+    # Ручной ввод
+    order_number = db.Column(db.String(50), index=True)
     customer_email = db.Column(db.String(100))
     product = db.Column(db.String(100), nullable=True)
+
+    # Отношение к заказу (если есть)
+    sale = db.relationship("Sale", backref="tickets", lazy=True)
+
+    source = db.Column(db.String(100))
     reason = db.Column(db.Text)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     status_id = db.Column(db.Integer, db.ForeignKey("status.id"), nullable=False)
@@ -37,7 +49,7 @@ class Ticket(db.Model):
 class Status(db.Model):
     __tablename__ = "status" 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), unique=True, nullable=False)   # техническое имя ("open", "admin_needed", "closed", )
+    name = db.Column(db.String(50), unique=True, nullable=False, index=True)   # техническое имя ("open", "admin_needed", "closed", )
     label = db.Column(db.String(100), nullable=False)              # человекочитаемое ("Открыт", "Нужен Админ", "Закрыт")
     category = db.Column(db.String(50), nullable=True)             # категория ("reason", "process", "final")
     color = db.Column(db.String(20), nullable=True)                # например: "warning", "primary", "success"

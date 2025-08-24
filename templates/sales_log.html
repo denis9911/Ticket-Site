@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Лог подгрузки заказов</h2>
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Дата и время</th>
+                <th>Кол-во заказов</th>
+                <th>Примечание</th>
+                <th>Ошибки</th> <!-- Новая колонка -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+            <tr>
+                <td>{{ log.id }}</td>
+                <td>{{ log.timestamp.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+                <td>{{ log.orders_loaded }}</td>
+                <td>{{ log.note or "" }}</td>
+                <td>{{ log.errors or "" }}</td> <!-- Вывод ошибок -->
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -9,8 +9,10 @@ from forms.profile_forms import StatusForm
 from models.ticket import Ticket, TicketMessage, TicketMessageAttachment, Status
 from models.attachment import TicketAttachment
 from models.ticket_view import TicketView
+from models.sales import Sale
 from forms.ticket_forms import TicketForm, MessageForm, EditTicketForm, TicketSearchForm
-from sqlalchemy import or_
+from sqlalchemy import or_, func
+from flask import jsonify
 
 ticket_bp = Blueprint('ticket', __name__)
 
@@ -67,14 +69,17 @@ def new_ticket():
     if form.validate_on_submit():
         status_obj = Status.query.get(form.status.data)
 
+        sale = Sale.query.filter_by(invoice_id=form.order_number.data.strip()).first()
+        
         ticket = Ticket(
-            order_number=form.order_number.data,
+            order_number=form.order_number.data.strip(),
             source=form.source.data,
             customer_email=form.customer_email.data,
             product=form.product.data,
             reason=form.reason.data,
             user_id=current_user.id,
-            status=status_obj
+            status=status_obj,
+            sales_id=sale.id if sale else None
         )
         db.session.add(ticket)
         db.session.commit()
@@ -107,7 +112,20 @@ def view_ticket(ticket_id):
     view.last_viewed_at = datetime.now(timezone.utc)
     db.session.commit()
 
+    # История покупок пользователя по email
+    user_sales = Sale.query.filter_by(email=ticket.customer_email)\
+        .order_by(Sale.date_pay.desc()).all()
+    
+    # Лист тикетов по номерам заказов
+    tickets_by_invoice = {
+    t.order_number.strip(): t.id 
+    for t in Ticket.query.filter(Ticket.order_number.in_([s.invoice_id for s in user_sales])).all()
+}
+    # Общая сумма покупок
+    total_amount = sum(s.amount_in for s in user_sales)
+    currency = user_sales[0].amount_currency if user_sales else ''
     if form.validate_on_submit():
+
         # Создаем сообщение
         message = TicketMessage(
             content=form.content.data,
@@ -137,11 +155,15 @@ def view_ticket(ticket_id):
     all_statuses = Status.query.all()
 
     return render_template(
-        'ticket_view/ticket_view.html',
-        ticket=ticket,
-        form=form,
-        all_statuses=all_statuses
-    )
+    'ticket_view/ticket_view.html',
+    ticket=ticket,
+    form=form,
+    all_statuses=all_statuses,
+    user_sales=user_sales,
+    tickets_by_invoice=tickets_by_invoice,
+    total_amount=total_amount,
+    currency=currency
+)
 
 
 
@@ -346,3 +368,19 @@ def add_status():
     db.session.commit()
     flash(f'Статус "{label}" добавлен', 'success')
     return redirect(url_for('ticket.new_ticket'))
+
+@ticket_bp.route('/check_order', methods=['POST'])
+@login_required
+def check_order():
+    data = request.get_json()
+    order_number = data.get('order_number', '').strip()
+    sale = Sale.query.filter_by(invoice_id=order_number).first()
+
+    existing_ticket = Ticket.query.filter_by(order_number=order_number).first()
+
+    return jsonify(
+        found=bool(sale),
+        customer_email=sale.email if sale else '',
+        product=sale.product_name if sale else '',
+        existing_ticket=existing_ticket.id if existing_ticket else None
+    )

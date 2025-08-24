@@ -1,5 +1,13 @@
+.env
 uploads/
 mig.py
 tickets.db
 __pycache__
-.gitignore
+asociathion.py
+merge.py
+sales.db
+tickets_back.db
+tickets_local.db
+tickets_back.db
+tickets_local.sql
+tickets_prod.db

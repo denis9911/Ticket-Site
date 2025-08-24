@@ -3,6 +3,9 @@ Flask-SQLAlchemy
 Flask-Login
 flask_migrate
 Flask-WTF
+Flask-Caching
 email_validator
 werkzeug
 pytz
+jsonify
+pymysql

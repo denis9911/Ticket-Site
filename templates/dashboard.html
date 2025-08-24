@@ -11,6 +11,15 @@
             <a href="{{ url_for('ticket.search_tickets') }}" class="btn btn-primary">
                 Поиск тикетов
             </a>
+            </a>
+            <a href="{{ url_for('sales.search_sales') }}" class="btn btn-primary">
+                Поиск заказов
+            </a>
+            {% if current_user.is_admin %}
+            <a href="{{ url_for('sales.sales_log') }}" class="btn btn-primary">
+                Логи парсинга API
+            </a>
+            {% endif %}
         </div>
     </div>
 
