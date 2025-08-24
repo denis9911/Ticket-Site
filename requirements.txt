@@ -9,3 +9,6 @@ werkzeug
 pytz
 jsonify
 pymysql
+dotenv
+requests
+flask_caching

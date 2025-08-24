@@ -1,4 +1,5 @@
 .env
+all db/
 uploads/
 mig.py
 tickets.db
