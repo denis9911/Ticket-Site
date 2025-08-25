@@ -19,7 +19,7 @@ ticket_bp = Blueprint('ticket', __name__)
 
 def save_file(file):
     filename = secure_filename(file.filename)
-    upload_dir = os.path.join(current_app.root_path, 'static', 'uploads')
+    upload_dir = current_app.config['UPLOAD_FOLDER']
     os.makedirs(upload_dir, exist_ok=True)
     file.save(os.path.join(upload_dir, filename))
     return filename
@@ -330,7 +330,7 @@ def delete_ticket(ticket_id):
     for msg in ticket.messages:
         for att in msg.attachments:
             try:
-                os.remove(os.path.join(current_app.static_folder, 'uploads', att.filename))
+                os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], att.filename))
             except Exception:
                 pass
             db.session.delete(att)
@@ -338,7 +338,7 @@ def delete_ticket(ticket_id):
     # Удаляем файлы самого тикета
     for att in ticket.images:
         try:
-            os.remove(os.path.join(current_app.static_folder, 'uploads', att.filename))
+            os.remove(os.path.join(current_app.config['UPLOAD_FOLDER'], att.filename))
         except Exception:
             pass
         db.session.delete(att)

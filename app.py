@@ -30,10 +30,6 @@ def create_app():
     app.register_blueprint(profile_bp)
     app.register_blueprint(sales_bp)
 
-    # Запуск загрузчика после создания контекста приложения
-    with app.app_context():
-        start_sales_loader(app)
-
     return app
 
 

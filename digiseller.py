@@ -1,19 +1,26 @@
 import time
 import hashlib
 import logging
-import threading
 import requests
 import pytz
 from datetime import datetime, timedelta
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
-from flask import current_app
 from extensions import db
-from app import cache
 from models.sales import Sale, SalesLog
 
-
 DIGISELLER_API_URL = "https://api.digiseller.com/api"
+
+# Глобальные переменные для конфигурации (будут установлены извне)
+DIGISELLER_SELLER_ID = None
+DIGISELLER_API_KEY = None
+CACHE = {}  # Простой кэш вместо flask-cache
+
+def configure_digiseller(seller_id, api_key):
+    """Установка конфигурации извне"""
+    global DIGISELLER_SELLER_ID, DIGISELLER_API_KEY
+    DIGISELLER_SELLER_ID = seller_id
+    DIGISELLER_API_KEY = api_key
 
 def save_sales_log(orders_count=0, note="", errors=None):
     """Сохраняет лог подгрузки заказов в БД"""
@@ -28,30 +35,31 @@ def save_sales_log(orders_count=0, note="", errors=None):
 
 def get_token():
     """Получаем и кэшируем токен Digiseller"""
-    token = cache.get("digiseller_token")
-    if token:
-        return token
-
-    seller_id = current_app.config['DIGISELLER_SELLER_ID']
-    api_key = current_app.config['DIGISELLER_API_KEY']
-    if not seller_id or not api_key:
-        raise ValueError("DIGISELLER_SELLER_ID или DIGISELLER_API_KEY не настроены в конфиге")
+    # Проверяем кэш
+    if "digiseller_token" in CACHE:
+        token, expiry = CACHE["digiseller_token"]
+        if time.time() < expiry:
+            return token
+    
+    if not DIGISELLER_SELLER_ID or not DIGISELLER_API_KEY:
+        raise ValueError("DIGISELLER_SELLER_ID или DIGISELLER_API_KEY не настроены")
+    
     current_time = int(time.time())
-    sign = hashlib.sha256((api_key + str(current_time)).encode()).hexdigest()
+    sign = hashlib.sha256((DIGISELLER_API_KEY + str(current_time)).encode()).hexdigest()
 
-    payload = {"seller_id": seller_id, "timestamp": current_time, "sign": sign}
+    payload = {"seller_id": DIGISELLER_SELLER_ID, "timestamp": current_time, "sign": sign}
     headers = {"Accept": "application/json"}
 
-    resp = requests.post(f"{DIGISELLER_API_URL}/apilogin", json=payload, headers=headers)
+    resp = requests.post(f"{DIGISELLER_API_URL}/apilogin", json=payload, headers=headers, timeout=30)
     data = resp.json()
 
     if data.get("retval") == 0:
         token = data["token"]
-        cache.set("digiseller_token", token, timeout=6600)  # 1 час 50 минут
+        # Кэшируем на 1 час 50 минут
+        CACHE["digiseller_token"] = (token, time.time() + 6600)
         return token
     else:
         raise Exception(f"Ошибка получения токена: {data}")
-
 
 def get_last_sale_date():
     """Берём последнюю дату заказа в БД"""
@@ -60,58 +68,57 @@ def get_last_sale_date():
         last_date = db.session.query(func.max(Sale.date_put)).scalar()
 
     if last_date:
-        return last_date + timedelta(seconds=1)  # чуть дальше, чтобы не дублировать
+        return last_date + timedelta(seconds=1)
     else:
         # если база пустая — старт с 2020 года
         tz_msk = pytz.timezone("Europe/Moscow")
         return datetime(2020, 1, 1, 0, 0, 0, tzinfo=tz_msk)
-
 
 def get_moscow_time():
     """Текущее время в Москве (UTC+3)"""
     tz_msk = pytz.timezone("Europe/Moscow")
     return datetime.now(tz_msk)
 
-
 def fetch_sales_v2():
     """Загрузка новых заказов через Digiseller API v2"""
-    token = get_token()
-    date_start = get_last_sale_date()
-    date_finish = get_moscow_time()
-
-    payload = {
-        "date_start": date_start.strftime("%Y-%m-%d %H:%M:%S"),
-        "date_finish": date_finish.strftime("%Y-%m-%d %H:%M:%S"),
-        "returned": 0,
-        "page": 1,
-        "rows": 500
-    }
-
-    url = f"{DIGISELLER_API_URL}/seller-sells/v2?token={token}"
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-
-    errors = []
-    inserted_count = 0
+    if not DIGISELLER_SELLER_ID or not DIGISELLER_API_KEY:
+        logging.error("Digiseller не настроен. Вызовите configure_digiseller() first.")
+        return 0
 
     try:
-        resp = requests.post(url, json=payload, headers=headers)
+        token = get_token()
+        date_start = get_last_sale_date()
+        date_finish = get_moscow_time()
+
+        payload = {
+            "date_start": date_start.strftime("%Y-%m-%d %H:%M:%S"),
+            "date_finish": date_finish.strftime("%Y-%m-%d %H:%M:%S"),
+            "returned": 0,
+            "page": 1,
+            "rows": 500
+        }
+
+        url = f"{DIGISELLER_API_URL}/seller-sells/v2?token={token}"
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+
+        errors = []
+        inserted_count = 0
+
+        resp = requests.post(url, json=payload, headers=headers, timeout=60)
         if resp.status_code != 200:
-            errors.append(f"HTTP {resp.status_code}: {resp.text}")
-            logging.error(errors[-1])
-            save_sales_log(0, note="Ошибка API", errors=errors)
+            error_msg = f"HTTP {resp.status_code}: {resp.text}"
+            logging.error(error_msg)
+            save_sales_log(0, note="Ошибка API", errors=[error_msg])
             return 0
 
         data = resp.json()
-        if "rows" not in data:
-            errors.append(f"Пустой ответ: {data}")
-            logging.warning(errors[-1])
-            save_sales_log(0, note="Пустой ответ API", errors=errors)
+        if "rows" not in data or not data["rows"]:
+            logging.info("Новых заказов нет")
             return 0
 
         for row in data["rows"]:
-            # проверяем обязательные поля
-            if not row.get("invoice_id") or not row.get("product_id") or not row.get("product_name") or not row.get("product_entry"):
-                errors.append(f"Пропущен заказ из-за отсутствия обязательных полей: {row}")
+            if not all([row.get("invoice_id"), row.get("product_id"), row.get("product_name"), row.get("product_entry")]):
+                errors.append(f"Пропущен заказ из-за отсутствия обязательных полей: {row.get('invoice_id')}")
                 continue
 
             sale = Sale(
@@ -131,6 +138,7 @@ def fetch_sales_v2():
                 partner_id=row.get("partner_id") or 0,
                 lang=row.get("lang") or "",
             )
+            
             try:
                 db.session.add(sale)
                 db.session.commit()
@@ -139,35 +147,15 @@ def fetch_sales_v2():
                 db.session.rollback()
             except Exception as e:
                 db.session.rollback()
-                errors.append(f"Ошибка вставки {row.get('id_invoice')}: {e}")
+                errors.append(f"Ошибка вставки {row.get('invoice_id')}: {e}")
+
+        # Сохраняем лог
+        save_sales_log(inserted_count, note="Автозагрузка", errors=errors)
+        logging.info(f"Добавлено {inserted_count} новых заказов, ошибок: {len(errors)}")
+        
+        return inserted_count
 
     except Exception as e:
-        errors.append(f"Общая ошибка: {e}")
-
-    # Сохраняем лог с количеством вставленных и ошибками
-    save_sales_log(inserted_count, note="Автозагрузка", errors=errors)
-    logging.info(f"Добавлено {inserted_count} новых заказов, ошибок: {len(errors)}")
-
-    return inserted_count
-
-
-
-def sales_loader_loop(app, interval=120):
-    """Фоновая задача: каждые interval секунд загружает новые заказы"""
-    with app.app_context():  # <- создаем контекст приложения
-        while True:
-            try:
-                new_count = fetch_sales_v2()
-                if new_count:
-                    save_sales_log(new_count, note="Автозагрузка")
-                logging.info(f"Загружено {new_count} заказов")
-            except Exception as e:
-                logging.error(f"Ошибка в загрузчике заказов: {e}")
-            time.sleep(interval)
-
-
-def start_sales_loader(app):
-    """Запуск загрузчика заказов в отдельном потоке"""
-    t = threading.Thread(target=sales_loader_loop, args=(app, 120), daemon=True)
-    t.start()
-    logging.info("Фоновый загрузчик заказов запущен")
+        logging.error(f"Общая ошибка в fetch_sales_v2: {e}")
+        save_sales_log(0, note="Общая ошибка", errors=[str(e)])
+        return 0
