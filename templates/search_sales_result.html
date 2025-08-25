@@ -21,7 +21,7 @@
         Ключ/Entry: {{ sale.product_entry }}<br>
         Email: {{ sale.email }}<br>
         IP: {{ sale.ip }}<br>
-        Дата: {{ sale.created_at.strftime('%Y-%m-%d %H:%M:%S') if sale.created_at else '—' }}<br>
+        Дата оплаты: {{ sale.date_pay.strftime('%Y-%m-%d %H:%M:%S') if sale.date_pay else '—' }}<br>  <!-- ← Измените здесь -->
         Метод оплаты: {{ sale.method_pay or '—' }}<br>
         Аггрегатор: {{ sale.aggregator_pay or '—' }}<br>
         Ошибки: {{ sale.errors or '—' }}

@@ -22,7 +22,7 @@ def search_sales():
                 Sale.email.ilike(f"%{search_term}%"),
                 Sale.ip.ilike(f"%{search_term}%")
             )
-        ).all()
+        ).order_by(Sale.date_pay.desc()).all()
 
     return render_template('search_sales_result.html', form=form, results=results)
 
