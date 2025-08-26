@@ -56,7 +56,8 @@
                 </div>
                 <div class="mb-3">
                     {{ form.images.label(class="form-label") }}
-                    {{ form.images(class="form-control", multiple=true, accept="image/*") }}
+                    {{ form.images(class="form-control", multiple=true, accept="image/*", id="imagesInput") }}
+                    <small class="form-text text-muted">Вы можете вставить изображение прямо из буфера (Ctrl+V)</small>
                 </div>
                 <div class="mb-3">
                     <label for="status" class="form-label">Статус</label>
@@ -116,6 +117,45 @@ document.getElementById('checkOrderBtn').addEventListener('click', function() {
     .catch(err => {
         msg.textContent = 'Ошибка запроса к серверу';
     });
+});
+</script>
+<script>
+document.addEventListener('paste', async (event) => {
+    const items = event.clipboardData.items;
+    if (!items) return;
+
+    const imagesInput = document.getElementById('imagesInput');
+
+    for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+
+        if (item.type.startsWith('image/')) {
+            const blob = item.getAsFile();
+            
+            // Создаём новый DataTransfer для input
+            const dataTransfer = new DataTransfer();
+            
+            // Сначала добавляем уже существующие файлы
+            for (let j = 0; j < imagesInput.files.length; j++) {
+                dataTransfer.items.add(imagesInput.files[j]);
+            }
+
+            // Добавляем новое изображение из буфера
+            dataTransfer.items.add(blob);
+            imagesInput.files = dataTransfer.files;
+
+            // Для визуальной проверки можно создать превью
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.style.maxWidth = '150px';
+                img.style.margin = '5px';
+                imagesInput.parentNode.appendChild(img);
+            };
+            reader.readAsDataURL(blob);
+        }
+    }
 });
 </script>
 {% endblock %}

@@ -73,18 +73,55 @@
 
     {% if ticket.status.category != 'final' %}
     <div class="card-footer">
-        <form method="POST" id="message-form" enctype="multipart/form-data">
+        <form method="POST" id="message-form" enctype="multipart/form-data" class="d-flex flex-column w-100">
             {{ form.hidden_tag() }}
-            <div class="input-group mb-2">
-                {{ form.content(class="form-control", placeholder="Напишите сообщение...", rows="2") }}
+            
+            <!-- Поле сообщения растянуто на всю ширину -->
+            <div class="mb-2 w-100">
+                {{ form.content(class="form-control w-100", placeholder="Напишите сообщение...", rows="2") }}
             </div>
-            <div class="input-group mb-2">
-                {{ form.attachment(class="form-control") }}
+
+            <!-- Вложение -->
+            <div class="mb-2 w-100">
+                {{ form.attachment(class="form-control w-100", id="attachmentInput") }}
             </div>
-            <button class="btn btn-primary" type="submit">
+
+            <!-- Кнопка -->
+            <button class="btn btn-primary w-100" type="submit">
                 <i class="bi bi-send"></i> Отправить
             </button>
         </form>
     </div>
     {% endif %}
-</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const messageForm = document.getElementById('message-form');
+    const attachmentInput = document.getElementById('attachmentInput');
+
+    // Обработчик вставки из буфера
+    messageForm.addEventListener('paste', async (event) => {
+        const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+        for (const item of items) {
+            if (item.type.indexOf('image') !== -1) {
+                const file = item.getAsFile();
+
+                // Создаем объект FileList для input
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                attachmentInput.files = dataTransfer.files;
+
+                // Для предпросмотра (если нужно)
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imgPreview = document.createElement('img');
+                    imgPreview.src = e.target.result;
+                    imgPreview.className = 'img-thumbnail me-2 mb-2';
+                    imgPreview.style.maxHeight = '100px';
+                    attachmentInput.parentNode.appendChild(imgPreview);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    });
+});
+</script>
