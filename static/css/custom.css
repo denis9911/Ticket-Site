@@ -1,3 +1,54 @@
+body {
+  color: var(--text-color);
+  background-color: var(--bg-color);
+  transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+/* Карточки */
+.pricing-card {
+  background-color: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-color);
+}
+
+.pricing-card.highlight {
+    animation: glowAnimation 2s infinite ease-in-out;
+}
+
+/* Заголовки */
+.card-title, .card-text, .features li {
+  color: var(--text-color) !important;
+}
+
+[data-bs-theme="light"] {
+  .price, .trial, .text-truncate {
+    line-height: 1.2; /* Правильный межстрочный интервал */
+    color: #6c757d !important; /* Читаемый серый для светлой темы */
+  }
+}
+
+[data-bs-theme="dark"] {
+  .price, .trial, .text-truncate {
+    line-height: 1.2; /* Правильный межстрочный интервал */
+    color: #adb5bd !important; /* Читаемый серый для темной темы */
+  }
+}
+.card-footer li, .card-body li {
+  display: flex;
+  align-items: center; /* Вертикальное выравнивание */
+  margin-bottom: 4px;
+}
+.bi {
+  font-size: 1.1em;
+  min-width: 20px; /* Фиксированная ширина для выравнивания */
+  text-align: center;
+}
+
+.email-item, .order-item {
+  display: flex;
+  align-items: center;
+  gap: 4px; /* Правильный отступ между иконкой и текстом */
+}
 /* Стили для карточек тикетов */
 .border-hover {
     border: 1px solid rgba(0,0,0,.125);
@@ -58,12 +109,6 @@
         scroll-behavior: smooth;
     }
 
-.glow-wrapper {
-    position: absolute;
-    top: -2px; left: -2px; right: -2px; bottom: -2px;
-    border-radius: 0.25rem;  /* совпадает с .card */
-    pointer-events: none;
-}
 
 @keyframes glowAnimation {
     0%   { box-shadow: 0 0 5px rgba(0,255,0,0.6); }
@@ -73,11 +118,136 @@
     100% { box-shadow: 0 0 5px rgba(0,255,0,0.6); }
 }
 
-.glowing {
-    animation: glowAnimation 2s infinite;
-}
 
 .ticket-content {
     font-family: Poppins, sans-serif;
 
+}
+
+/* Базовые стили без цвета границы */
+.pricing-card {
+  background: #1a1a1a;
+  /* УБЕРИТЕ border отсюда */
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Добавьте базовый цвет границы */
+.pricing-card {
+  border: 2px solid #ff4000;  /* По умолчанию */
+}
+
+/* Тогда специфичные стили будут работать */
+.pricing-card.for_admin {
+  border-color: #dc3545;
+  background: rgba(220, 53, 69, 0.05);
+}
+
+.pricing-card.for_support {
+  border-color: #00fd08;
+  background: rgba(220, 53, 69, 0.05);
+}
+
+
+.pricing-card.closed {
+  border-color: #6c757d;
+  background: rgba(220, 53, 69, 0.05);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+.plan-type {
+  background: #7CFF5E;
+  color: black;
+  font-weight: bold;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.billing {
+  font-size: 14px;
+  color: #bbb;
+}
+
+.card-body {
+  padding: 16px;
+  flex-grow: 1; /* тело растягивается, чтобы футер всегда был снизу */
+}
+
+.trial {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: #ddd;
+}
+
+.features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.features li {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.card-footer {
+  border-top: 1px solid #444;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+}
+
+.price {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ccc;
+}
+
+.choose-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: white;
+  color: black;
+  font-size: 14px;
+  cursor: default; /* не кнопка, просто стиль */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-img {
+  width: 38px;
+  height: 38px;
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 50%;
+  object-fit: cover; /* Обрезает и сохраняет пропорции */
+  object-position: center; /* Центрирует изображение */
+  border: 2px solid #7CFF5E;
+  display: block; /* Убирает зазор снизу */
+}
+
+.avatar-img.for_admin {
+  border: 2px solid #dc3545 !important; /* красный */
+}
+
+.avatar-img.for_support {
+  border: 2px solid #28a745 !important; /* зеленый */
+}
+
+.avatar-img.closed {
+  border: 2px solid #6c757d !important; /* серый */
 }

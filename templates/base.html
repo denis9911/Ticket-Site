@@ -21,7 +21,7 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <!-- Переключатель темы в навигацию -->
+                <!-- Переключатель темы -->
                 <li class="nav-item">
                     <div class="form-check form-switch my-1">
                         <input class="form-check-input" type="checkbox" id="darkModeSwitch">
@@ -30,6 +30,7 @@
                         </label>
                     </div>
                 </li>
+
                 {% if current_user.is_authenticated %}
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('profile.profile') }}">Профиль</a>
@@ -61,6 +62,71 @@
 
     {% block content %}{% endblock %}
 </div>
+<!-- Overlay для включения уведомлений -->
+<div id="notification-overlay" class="active">
+    <button id="enable-notifications-btn">Включить уведомления</button>
+</div>
+
+<style>
+#notification-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    backdrop-filter: blur(0);
+    background: rgba(0,0,0,0);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    transition: backdrop-filter 0.5s ease, background 0.5s ease, opacity 0.5s ease;
+    pointer-events: none; /* чтобы не блокировать клики, пока overlay невидим */
+}
+
+#notification-overlay.active {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.4);
+    pointer-events: all; /* активируем клики */
+}
+
+#enable-notifications-btn {
+    padding: 1rem 2rem;
+    font-size: 1.3rem;
+    border: none;
+    border-radius: 12px;
+    background-color: #0d6efd;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+    transform: scale(0.5);
+    opacity: 0;
+    transition: transform 0.4s ease, opacity 0.4s ease;
+}
+
+#notification-overlay.active #enable-notifications-btn {
+    transform: scale(1);
+    opacity: 1;
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const overlay = document.getElementById('notification-overlay');
+    const enableBtn = document.getElementById('enable-notifications-btn');
+
+    // Состояние звука/уведомлений
+    window.soundEnabled = false;
+
+    enableBtn.addEventListener('click', () => {
+        window.soundEnabled = true;
+        overlay.classList.remove('active'); // плавное исчезновение
+        console.log("Уведомления и звук включены");
+    });
+});
+</script>
 
 <!-- Bootstrap JS Bundle with Popper -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -97,31 +163,94 @@
     });
 </script>
 
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const elements = document.querySelectorAll(".utc-time");
+document.addEventListener("DOMContentLoaded", () => {
+    const overlay = document.getElementById('notification-overlay');
+    const enableBtn = document.getElementById('enable-notifications-btn');
 
-        elements.forEach(el => {
-            const utcTime = el.dataset.utc;
-            const localDate = new Date(utcTime);
-            const options = {
-                year: 'numeric', month: 'short', day: 'numeric',
-                hour: '2-digit', minute: '2-digit',
-                hour12: false
-            };
-            el.textContent = localDate.toLocaleString(undefined, options);
+    // Сохраняем состояние звука и уведомлений
+    window.soundEnabled = false;
+
+    // Socket.IO
+    const socket = io();
+    const audio = new Audio("{{ url_for('static', filename='sounds/notify.mp3') }}");
+    let unread = JSON.parse(localStorage.getItem('unreadTickets') || '{}');
+
+    function highlightCard(ticket_id) {
+        const card = document.querySelector(`.pricing-card[data-ticket-id="${ticket_id}"]`);
+        if (!card) return false;
+        card.classList.add("highlight");
+        const container = card.querySelector(".avatar-container");
+        if (container) {
+            let badge = container.querySelector(".msg-badge");
+            if (!badge) {
+                badge = document.createElement("span");
+                badge.className = "msg-badge position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger";
+                badge.style.fontSize = "0.7rem";
+                container.appendChild(badge);
+            }
+            badge.textContent = unread[ticket_id];
+        }
+        return true;
+    }
+
+    // Обработчик включения уведомлений
+    enableBtn.addEventListener('click', () => {
+        window.soundEnabled = true; // включаем звук
+        overlay.style.display = 'none'; // скрываем overlay
+        console.log("Уведомления и звук включены");
+
+        // Подсвечиваем уже непросмотренные карточки
+        Object.keys(unread).forEach(ticket_id => highlightCard(ticket_id));
+    });
+
+    // Обработка новых сообщений
+    socket.on("new_message", (data) => {
+        if (!unread[data.ticket_id]) unread[data.ticket_id] = 0;
+        unread[data.ticket_id]++;
+        localStorage.setItem('unreadTickets', JSON.stringify(unread));
+
+        // Воспроизводим звук и показываем toast только если включено
+        if (window.soundEnabled) audio.play().catch(()=>{});
+
+        highlightCard(data.ticket_id);
+
+        const toastContainer = document.getElementById('toast-container');
+        if (toastContainer) {
+            const toastEl = document.createElement('div');
+            toastEl.className = 'toast align-items-center text-bg-primary border-0';
+            toastEl.role = 'alert';
+            toastEl.ariaLive = 'assertive';
+            toastEl.ariaAtomic = 'true';
+            toastEl.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        Новое сообщение в тикете #${data.ticket_id}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>`;
+            toastContainer.appendChild(toastEl);
+            const bsToast = new bootstrap.Toast(toastEl);
+            bsToast.show();
+        }
+    });
+
+    // Очистка подсветки при клике на карточку
+    document.querySelectorAll(".pricing-card").forEach(card => {
+        card.addEventListener('click', () => {
+            const tid = card.dataset.ticketId;
+            card.classList.remove('highlight');
+            if (unread[tid]) { 
+                delete unread[tid]; 
+                localStorage.setItem('unreadTickets', JSON.stringify(unread));
+            }
+            const badge = card.querySelector(".msg-badge");
+            if (badge) badge.remove();
         });
     });
-</script>
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl)
-        })
-    });
+});
 </script>
 
-{% block extra_js %}{% endblock %}
-</body>
+<div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;"></div>
 </html>

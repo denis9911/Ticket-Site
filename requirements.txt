@@ -12,3 +12,5 @@ pymysql
 dotenv
 requests
 flask_caching
+cryptography
+flask-socketio eventlet

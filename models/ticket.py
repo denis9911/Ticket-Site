@@ -54,6 +54,7 @@ class Status(db.Model):
     category = db.Column(db.String(50), nullable=True)             # категория ("reason", "process", "final")
     color = db.Column(db.String(20), nullable=True)                # например: "warning", "primary", "success"
     description = db.Column(db.String(100), nullable=True)         # например: "Вопрос по платежу - Завис платеж или другие проблемы с ним"
+    group = db.Column(db.String(20))
 
 
 class TicketMessage(db.Model):

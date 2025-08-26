@@ -5,7 +5,7 @@ from routes.auth import auth_bp
 from routes.ticket import ticket_bp
 from routes.profile import profile_bp
 from routes.sales import sales_bp
-from digiseller import start_sales_loader
+from extensions import socketio
 
 
 def create_app():
@@ -18,11 +18,10 @@ def create_app():
     db.init_app(app)
     login_manager.init_app(app)
     migrate.init_app(app, db)
+    socketio.init_app(app)
     
     login_manager.login_view = 'auth.login'
     
-    # Кэш для Digiseller токена
-    cache.init_app(app, config={'CACHE_TYPE': 'SimpleCache', 'CACHE_DEFAULT_TIMEOUT': 6600})
     
     # Регистрация блюпринтов
     app.register_blueprint(auth_bp)
@@ -36,4 +35,4 @@ def create_app():
 
 if __name__ == "__main__":
     app = create_app()
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    socketio.run(app,host="0.0.0.0", port=8080, debug=True)

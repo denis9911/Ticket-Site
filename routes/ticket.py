@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, flash,
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
 from datetime import datetime, timezone
-from extensions import db
+from extensions import db, socketio
 from forms.profile_forms import StatusForm
 from models.ticket import Ticket, TicketMessage, TicketMessageAttachment, Status
 from models.attachment import TicketAttachment
@@ -133,7 +133,7 @@ def view_ticket(ticket_id):
             user_id=current_user.id
         )
         db.session.add(message)
-        db.session.commit()  # чтобы был message.id
+        db.session.commit()
 
         # Сохраняем вложения
         if form.attachment.data:
@@ -149,6 +149,13 @@ def view_ticket(ticket_id):
 
         ticket.updated_at = datetime.now(timezone.utc)
         db.session.commit()
+        socketio.emit("new_message", {
+            "ticket_id": ticket.id,
+            "author": current_user.display_name or current_user.username,
+            "avatar": url_for('static', filename=current_user.avatar or "img/default-avatar.png"),
+            "message_id": message.id,
+        }, to=None)  # None = всем      
+        print("EMIT: new_message", ticket.id)
         flash('Сообщение отправлено', 'success')
         return redirect(url_for('ticket.view_ticket', ticket_id=ticket.id))
 

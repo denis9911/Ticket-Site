@@ -6,7 +6,7 @@
         <div class="card-header bg-primary text-white">
             <div class="d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">Тикет #{{ ticket.id }}</h4>
-                <span class="badge bg-{{ ticket.status.color or 'secondary' }}">
+                <span class="badge ms-3 bg-{{ ticket.status.color or 'secondary' }}">
                     {% if ticket.status.icon %}
                         <i class="bi bi-{{ ticket.status.icon }}"></i>
                     {% endif %}
@@ -46,4 +46,6 @@
         border-bottom-right-radius: 0.25rem;
     }
 </style>
+
 {% endblock %}
+

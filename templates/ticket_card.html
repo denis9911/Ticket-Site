@@ -1,88 +1,74 @@
-<div class="card h-100 shadow-sm border-hover position-relative">
+<div class="pricing-card {{ ticket.status.group }} position-relative" data-ticket-id="{{ ticket.id }}">
+    <!-- Подсветка (если нужна как в старом варианте) -->
     <div class="glow-wrapper {% if ticket_highlights.get(ticket.id) %}glowing{% endif %}"></div>
-    <div class="card-body position-relative p-3">
-        <!-- Заголовок и ID -->
-        <div class="d-flex justify-content-between align-items-start mb-2">
-            <span class="badge bg-secondary">#{{ ticket.id }}</span>
-            <small class="text-muted text-end" style="font-size: 0.75rem;">
-                {% if ticket.created_at %}
-                <div>
-                    <i class="bi bi-plus-circle"></i>
-                    <span class="utc-time" data-utc="{{ ticket.created_at.isoformat() }}Z">...</span>
-                </div>
-                {% endif %}
-                {% if ticket.updated_at and ticket.updated_at != ticket.created_at %}
-                <div>
-                    <i class="bi bi-pencil"></i>
-                    <span class="utc-time" data-utc="{{ ticket.updated_at.isoformat() }}Z">...</span>
-                </div>
-                {% endif %}
-            </small>
-        </div>
 
-        <!-- Основное содержимое -->
-        <div class="ticket-content" style="padding-bottom: 40px;">
-            <!-- Order ID и Email -->
+    <!-- Верхняя панель -->
+    <div class="card-header">
+        <span class="plan-type badge bg-{{ ticket.status.color or 'secondary' }}">
+            {% set icon_map = {
+                'success': 'check-circle',
+                'primary': 'gear',
+                'warning': 'plus-circle',
+                'danger': 'exclamation-triangle',
+                'info': 'key-fill'
+            } %}
+            <i class="bi bi-{{ icon_map.get(ticket.status.color, 'question-circle') }}"></i>
+            {{ ticket.status.label }}
+        </span>
+        <span class="billing">#{{ ticket.id }}</span>
+    </div>
 
-            <h6 class="card-title mb-2">
-                {% if ticket.order_number %}
-                <div class="d-flex align-items-center mb-1">
-                    <i class="bi bi-receipt me-1"></i>
-                    <span class="d-inline-block text-truncate" style="max-width: 150px;">
-                            {{ ticket.order_number }}
-                        </span>
-                </div>
-                {% endif %}
-                {% if ticket.customer_email %}
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-envelope me-1"></i>
-                    <span class="d-inline-block text-truncate" style="max-width: 150px;">
-                            {{ ticket.customer_email }}
-                        </span>
-                </div>
-                {% endif %}
-            </h6>
+    <!-- Основное содержимое -->
+    <div class="card-body">
+        <p class="trial">
+            {% if ticket.source == 'talkme' %}TalkMe
+            {% elif ticket.source == 'digiseller' %}Digiseller
+            {% else %}{{ ticket.source or 'Не указан' }}{% endif %}
+            • {{ ticket.messages|length }} сообщений
+        </p>
 
-            <!-- Источник -->
-            <div class="mb-2">
-                <span class="badge bg-dark mb-1">
-                    <i class="bi bi-shop me-1"></i>
-                    {% if ticket.source == 'talkme' %}TalkMe
-                    {% elif ticket.source == 'digiseller' %}Digiseller
-                    {% else %}{{ ticket.source or 'Не указан' }}{% endif %}
+        <ul class="features">
+            {% if ticket.order_number %}
+            <li>
+                <i class="bi bi-receipt me-1"></i>
+                <span class="d-inline-block text-truncate" style="max-width: 180px;">
+                    {{ ticket.order_number }}
                 </span>
-                <span class="badge bg-info">
-                    <i class="bi bi-chat-text me-1"></i>
-                    {{ ticket.messages|length }}
+            </li>
+            {% endif %}
+            {% if ticket.customer_email %}
+            <li>
+                <i class="bi bi-envelope me-1"></i>
+                <span class="d-inline-block text-truncate" style="max-width: 180px;">
+                    {{ ticket.customer_email }}
                 </span>
-            </div>
-
-            <!-- Описание -->
-            <p class="text-muted small mb-0"
-               style="display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;">
+            </li>
+            {% endif %}
+            <li>
+                <i class="bi bi-info-circle me-1"></i>
                 {{ ticket.reason or 'Описание отсутствует' }}
-            </p>
-        </div>
+            </li>
+        </ul>
+    </div>
 
-        <!-- Статус и автор -->
-        <div class="position-absolute bottom-0 start-0 end-0 px-3 pb-2 pt-2 border-top">
-            <div class="d-flex justify-content-between align-items-center">
-                <span class="badge bg-{{ ticket.status.color or 'secondary' }}" style="font-size: 0.75rem;">
-                    {% set icon_map = {
-                        'success': 'check-circle',
-                        'primary': 'gear',
-                        'warning': 'plus-circle',
-                        'danger': 'exclamation-triangle',
-                        'info': 'key-fill'
-                    } %}
-                    <i class="bi bi-{{ icon_map.get(ticket.status.color, 'question-circle') }}"></i>
-                    {{ ticket.status.label }}
-                </span>
-                <small class="text-muted text-truncate" style="max-width: 80px;">
-                    <strong>{{ ticket.author.display_name or ticket.author.username }}</strong>
-                </small>
-            </div>
+    <!-- Нижняя панель -->
+    <div class="card-footer">
+        <span class="price">
+            {% if ticket.updated_at and ticket.updated_at != ticket.created_at %}
+                {{ ticket.updated_at.strftime('%d/%m/%y') }}<br>
+                {{ ticket.updated_at.strftime('%H:%M:%S') }}
+            {% elif ticket.created_at %}
+                {{ ticket.created_at.strftime('%d/%m/%y') }}
+                {{ ticket.created_at.strftime('%H:%M:%S') }}
+            {% endif %}
+        </span>
+        <div class="avatar-container position-relative" style="width: 38px; height: 38px;">
+            <img src="{{ url_for('static', filename=ticket.author.avatar) if ticket.author.avatar else url_for('static', filename='img/default-avatar.png') }}"
+                alt="{{ ticket.author.display_name or ticket.author.username }}"
+                class="avatar-img {{ ticket.status.group }}">
         </div>
     </div>
+
+    <!-- Ссылка на просмотр тикета -->
     <a href="{{ url_for('ticket.view_ticket', ticket_id=ticket.id) }}" class="stretched-link"></a>
 </div>
