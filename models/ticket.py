@@ -86,6 +86,7 @@ class TicketMessageAttachment(db.Model):
         nullable=False
     )
 
+    @property
     def url(self):
         return url_for('static', filename='uploads/' + self.filename)
 

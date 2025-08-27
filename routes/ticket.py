@@ -13,6 +13,7 @@ from models.sales import Sale
 from forms.ticket_forms import TicketForm, MessageForm, EditTicketForm, TicketSearchForm
 from sqlalchemy import or_, func
 from flask import jsonify
+import base64
 
 ticket_bp = Blueprint('ticket', __name__)
 
@@ -391,3 +392,19 @@ def check_order():
         product=sale.product_name if sale else '',
         existing_ticket=existing_ticket.id if existing_ticket else None
     )
+
+@ticket_bp.route("/upload_from_clipboard/<int:ticket_id>", methods=["POST"])
+def upload_from_clipboard(ticket_id):
+    files = request.files.getlist("image")  # может быть несколько файлов
+    urls = []
+
+    for file in files:
+        ext = os.path.splitext(file.filename)[1] or ".png"
+        filename = f"{uuid.uuid4().hex}{ext}"
+        save_path = os.path.join(current_app.static_folder, "uploads", filename)
+        filename = f"{uuid.uuid4().hex}{ext}"
+        print("Saving clipboard file as:", filename)
+        file.save(save_path)
+        urls.append(url_for('static', filename=f"uploads/{filename}"))
+
+    return {"urls": urls}  # можно возвращать список всех файлов

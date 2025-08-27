@@ -14,8 +14,8 @@
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <div class="d-flex align-items-center">
                                 {% if message.author.avatar %}
-                                <img src="{{ url_for('static', filename=message.author.avatar) }}"
-                                     class="rounded-circle me-2" width="32" height="32" alt="Аватар">
+                                <img src="{{ url_for('static', filename=message.author.avatar or 'img/default-avatar.png') }}"
+                                    class="rounded-circle me-2" width="32" height="32" alt="Аватар">
                                 {% else %}
                                 <div class="bg-secondary rounded-circle me-2 d-flex align-items-center justify-content-center"
                                      style="width: 32px; height: 32px;">
@@ -49,16 +49,15 @@
                         </div>
 
                         <p class="mb-0">{{ message.content }}</p>
-
-                        {% if message.attachments %}
-                        <div class="mt-2">
-                            {% for img in message.attachments %}
-                                <a href="{{ img.url() }}" target="_blank">
-                                    <img src="{{ img.url() }}" alt="Вложение" class="img-thumbnail me-2 mb-2" style="max-height: 150px;">
-                                </a>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
+                            {% if message.attachments %}
+                            <div class="mt-2">
+                                {% for img in message.attachments %}
+                                    <a href="{{ img.url }}" target="_blank">
+                                        <img src="{{ img.url }}" alt="Вложение" class="img-thumbnail me-2 mb-2" style="max-height: 150px;">
+                                    </a>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                     </div>
                 </div>
             </div>
@@ -78,14 +77,14 @@
             
             <!-- Поле сообщения растянуто на всю ширину -->
             <div class="mb-2 w-100">
-                {{ form.content(class="form-control w-100", placeholder="Напишите сообщение...", rows="2") }}
+                {{ form.content(class="form-control w-100", placeholder="Напишите сообщение...", rows="2", id="reason", **{'data-ticket-id': ticket.id}) }}
             </div>
 
             <!-- Вложение -->
             <div class="mb-2 w-100">
                 {{ form.attachment(class="form-control w-100", id="attachmentInput") }}
             </div>
-
+            <div id="clipboard-previews" class="d-flex flex-wrap mt-2"></div>
             <!-- Кнопка -->
             <button class="btn btn-primary w-100" type="submit">
                 <i class="bi bi-send"></i> Отправить
@@ -94,34 +93,48 @@
     </div>
     {% endif %}
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const messageForm = document.getElementById('message-form');
-    const attachmentInput = document.getElementById('attachmentInput');
+document.addEventListener("DOMContentLoaded", () => {
+    const textarea = document.querySelector("#reason");
+    const form = document.querySelector("#message-form");
+    const previewContainer = document.getElementById("clipboard-previews");
+    let clipboardFiles = [];
 
-    // Обработчик вставки из буфера
-    messageForm.addEventListener('paste', async (event) => {
-        const items = (event.clipboardData || event.originalEvent.clipboardData).items;
-        for (const item of items) {
-            if (item.type.indexOf('image') !== -1) {
-                const file = item.getAsFile();
+    textarea.addEventListener("paste", function(event) {
+        const items = event.clipboardData.items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf("image") !== -1) {
+                const file = items[i].getAsFile();
+                const newFile = new File([file], `${crypto.randomUUID()}.png`, { type: file.type });
+                clipboardFiles.push(newFile);
 
-                // Создаем объект FileList для input
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                attachmentInput.files = dataTransfer.files;
-
-                // Для предпросмотра (если нужно)
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const imgPreview = document.createElement('img');
-                    imgPreview.src = e.target.result;
-                    imgPreview.className = 'img-thumbnail me-2 mb-2';
-                    imgPreview.style.maxHeight = '100px';
-                    attachmentInput.parentNode.appendChild(imgPreview);
-                };
-                reader.readAsDataURL(file);
+                const preview = document.createElement("img");
+                preview.src = URL.createObjectURL(newFile);
+                preview.className = "img-thumbnail me-2 mb-2";
+                preview.style.maxHeight = "120px";
+                previewContainer.appendChild(preview);
             }
         }
     });
+
+    form.addEventListener("submit", function(e) {
+        e.preventDefault(); // отменяем обычную отправку
+
+        const formData = new FormData(form);
+
+        // Добавляем файлы из буфера
+        clipboardFiles.forEach(f => formData.append(form.querySelector("#attachmentInput").name, f));
+
+        fetch(form.action, {
+            method: form.method,
+            body: formData
+        }).then(res => {
+            if (res.redirected) {
+                window.location.href = res.url;
+            } else {
+                return res.text();
+            }
+        });
+    });
 });
+
 </script>

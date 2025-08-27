@@ -120,43 +120,58 @@ document.getElementById('checkOrderBtn').addEventListener('click', function() {
 });
 </script>
 <script>
-document.addEventListener('paste', async (event) => {
-    const items = event.clipboardData.items;
-    if (!items) return;
+document.addEventListener("DOMContentLoaded", () => {
+    const imagesInput = document.getElementById("imagesInput");
+    const previewsContainer = document.getElementById("clipboard-previews");
 
-    const imagesInput = document.getElementById('imagesInput');
+    // Массив для хранения всех файлов (из input + буфера)
+    let allFiles = [];
 
-    for (let i = 0; i < items.length; i++) {
-        const item = items[i];
-
-        if (item.type.startsWith('image/')) {
-            const blob = item.getAsFile();
-            
-            // Создаём новый DataTransfer для input
-            const dataTransfer = new DataTransfer();
-            
-            // Сначала добавляем уже существующие файлы
-            for (let j = 0; j < imagesInput.files.length; j++) {
-                dataTransfer.items.add(imagesInput.files[j]);
-            }
-
-            // Добавляем новое изображение из буфера
-            dataTransfer.items.add(blob);
-            imagesInput.files = dataTransfer.files;
-
-            // Для визуальной проверки можно создать превью
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const img = document.createElement('img');
-                img.src = e.target.result;
-                img.style.maxWidth = '150px';
-                img.style.margin = '5px';
-                imagesInput.parentNode.appendChild(img);
-            };
-            reader.readAsDataURL(blob);
+    // Событие изменения input (Выбрать файлы)
+    imagesInput.addEventListener("change", (e) => {
+        // Добавляем новые выбранные файлы в массив
+        for (let i = 0; i < e.target.files.length; i++) {
+            allFiles.push(e.target.files[i]);
         }
+        updateInputFiles();
+    });
+
+    // Событие вставки из буфера
+    document.addEventListener("paste", (event) => {
+        const items = event.clipboardData.items;
+        if (!items) return;
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.type.startsWith("image/")) {
+                const file = item.getAsFile();
+                const newFile = new File([file], `${crypto.randomUUID()}.${file.type.split("/")[1]}`, { type: file.type });
+
+                allFiles.push(newFile);
+
+                // Превью
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.createElement("img");
+                    img.src = e.target.result;
+                    img.style.maxWidth = "150px";
+                    img.style.margin = "5px";
+                    previewsContainer.appendChild(img);
+                };
+                reader.readAsDataURL(newFile);
+            }
+        }
+        updateInputFiles();
+    });
+
+    // Функция обновления input.files из массива allFiles
+    function updateInputFiles() {
+        const dt = new DataTransfer();
+        allFiles.forEach(f => dt.items.add(f));
+        imagesInput.files = dt.files;
     }
 });
 </script>
+
 {% endblock %}
 
