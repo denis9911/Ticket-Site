@@ -22,7 +22,16 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 <!-- Переключатель темы -->
-                <li class="nav-item">
+                <li class="nav-item ms-2">
+                    <div class="form-check form-switch my-1 ms-3">
+                        <input class="form-check-input" type="checkbox" id="overlayToggle">
+                        <label class="form-check-label text-white" for="overlayToggle">
+                            Показывать оверлей
+                        </label>
+                    </div>
+                </li>
+                <li></li>
+                <li class="nav-item ms-3">
                     <div class="form-check form-switch my-1">
                         <input class="form-check-input" type="checkbox" id="darkModeSwitch">
                         <label class="form-check-label text-white" for="darkModeSwitch">
@@ -116,13 +125,33 @@
 document.addEventListener("DOMContentLoaded", () => {
     const overlay = document.getElementById('notification-overlay');
     const enableBtn = document.getElementById('enable-notifications-btn');
+    const overlayToggle = document.getElementById('overlayToggle');
 
-    // Состояние звука/уведомлений
+    // Состояние уведомлений
     window.soundEnabled = false;
 
+    // Восстанавливаем выбор пользователя из localStorage
+    const overlayEnabled = localStorage.getItem("overlayEnabled") !== "false"; 
+    overlayToggle.checked = overlayEnabled;
+    if (!overlayEnabled) {
+        overlay.classList.remove("active");
+    }
+
+    // Переключатель в navbar
+    overlayToggle.addEventListener("change", () => {
+        const enabled = overlayToggle.checked;
+        localStorage.setItem("overlayEnabled", enabled);
+        if (enabled) {
+            overlay.classList.add("active");
+        } else {
+            overlay.classList.remove("active");
+        }
+    });
+
+    // Кнопка внутри оверлея
     enableBtn.addEventListener('click', () => {
         window.soundEnabled = true;
-        overlay.classList.remove('active'); // плавное исчезновение
+        overlay.classList.remove('active');
         console.log("Уведомления и звук включены");
     });
 });
