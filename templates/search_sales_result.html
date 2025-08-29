@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <h2>Поиск продаж</h2>
-
+{% set currency_names = {'WMR': '₽', 'WMZ': '$', 'WML': 'Ł', 'WMT':'USDT', 'WME':'€'} %}
 <form method="POST">
     {{ form.hidden_tag() }}
     <div class="mb-3">
@@ -16,15 +16,21 @@
 <ul class="list-group">
     {% for sale in results %}
     <li class="list-group-item">
-        <strong>Заказ #{{ sale.invoice_id }}</strong><br>
+        {% if sale.invoice_id in tickets_by_invoice %}
+            <a href="{{ url_for('ticket.view_ticket', ticket_id=tickets_by_invoice[sale.invoice_id]) }}" 
+            class="text-decoration-none">
+                <strong>Заказ #{{ sale.invoice_id }}</strong>
+            </a><br>
+        {% else %}
+            <strong>Заказ #{{ sale.invoice_id }}</strong><br>
+        {% endif %}
         Наименование товара: {{ sale.product_name }}<br>
         Ключ/Entry: {{ sale.product_entry }}<br>
         Email: {{ sale.email }}<br>
         IP: {{ sale.ip }}<br>
-        Дата оплаты: {{ sale.date_pay.strftime('%Y-%m-%d %H:%M:%S') if sale.date_pay else '—' }}<br>  <!-- ← Измените здесь -->
+        Дата оплаты: {{ sale.date_pay.strftime('%Y-%m-%d %H:%M:%S') if sale.date_pay else '—' }}<br>
         Метод оплаты: {{ sale.method_pay or '—' }}<br>
-        Аггрегатор: {{ sale.aggregator_pay or '—' }}<br>
-        Ошибки: {{ sale.errors or '—' }}
+        Цена: {{ sale.amount_in or '—' }} {{ currency_names.get(sale.amount_currency) }}
     </li>
     {% endfor %}
 </ul>

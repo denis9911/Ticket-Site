@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request
 from sqlalchemy import or_
 from extensions import db
+from models.ticket import Ticket
 from models.sales import Sale, SalesLog   # ваша модель платежей
 from forms.sales_forms import SalesSearchForm  # создадим форму поиска
 
@@ -10,6 +11,7 @@ sales_bp = Blueprint('sales', __name__)
 def search_sales():
     form = SalesSearchForm()
     results = []
+    tickets_by_invoice = {}   # ← сразу инициализируем
 
     if form.validate_on_submit():
         search_term = form.query.data.strip()
@@ -23,8 +25,20 @@ def search_sales():
                 Sale.ip.ilike(f"%{search_term}%")
             )
         ).order_by(Sale.date_pay.desc()).all()
+            
+        if results:
+            invoice_ids = [s.invoice_id for s in results]
+            tickets_by_invoice = {
+                t.order_number.strip(): t.id
+                for t in Ticket.query.filter(Ticket.order_number.in_(invoice_ids)).all()
+            }
 
-    return render_template('search_sales_result.html', form=form, results=results)
+    return render_template(
+        "search_sales_result.html",
+        form=form,
+        results=results,
+        tickets_by_invoice=tickets_by_invoice
+    )
 
 
 @sales_bp.route("/sales-log")

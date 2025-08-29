@@ -1,5 +1,5 @@
 <div class="card mb-3 p-2">
-    {% set currency_names = {'WMR': '₽', 'WMZ': '$', 'WML': 'Ł', 'WMT':'USDT'} %}
+    {% set currency_names = {'WMR': '₽', 'WMZ': '$', 'WML': 'Ł', 'WMT':'USDT', 'WME':'€'} %}
     {% set totals = {} %}
     {% for sale in user_sales %}
         {% set currency = sale.amount_currency %}
